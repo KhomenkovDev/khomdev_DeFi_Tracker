@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - Finance AI{% endblock %}
+
+{% block content %}
+<div class="auth-container glass-card">
+    <h2>Create Account</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+            <span class="helptext">{{ field.help_text|safe }}</span>
+            {% endif %}
+            {{ field.errors }}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Register</button>
+    </form>
+    <p style="margin-top: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+        Already have an account? <a href="{% url 'login' %}" style="color: var(--accent); text-decoration: none;">Log in here</a>
+    </p>
+</div>
+{% endblock %}

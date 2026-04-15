@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ asset_symbol }} AI Analysis - Finance AI{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>AI Analysis for <span style="color: var(--accent);">{{ asset_symbol }}</span></h1>
+    <a href="{% url 'dashboard_home' %}" class="back-link">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Back to Dashboard
+    </a>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Market Review Section -->
+    <section class="glass-card" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <h2>Market Review</h2>
+        <p class="text-muted">Ask Gemini AI to analyze historical price trends and summarize market context.</p>
+        
+        <div class="form-group">
+            <label>Lookback Period</label>
+            <select id="review-period">
+                <option value="1mo">Last 1 Month</option>
+                <option value="3mo">Last 3 Months</option>
+                <option value="6mo">Last 6 Months</option>
+                <option value="1y">Last 1 Year</option>
+            </select>
+        </div>
+        
+        <button id="btn-review" class="btn btn-primary">Generate Report</button>
+        
+        <div class="loader" id="loader-review"></div>
+        <div id="review-output" class="analysis-content markdown-body" style="display: none;"></div>
+    </section>
+
+    <!-- AI Predictions Section -->
+    <section class="glass-card" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <h2>Price Predictions</h2>
+        <p class="text-muted">Experimental: Have Gemini AI predict short-term price movements based on recent chart patterns.</p>
+        
+        <div class="form-group">
+            <label>Prediction Horizon</label>
+            <select id="predict-period">
+                <option value="5 days">Next 5 Days</option>
+                <option value="1 month">Next 1 Month</option>
+            </select>
+        </div>
+        
+        <button id="btn-predict" class="btn btn-primary">Run Prediction Model</button>
+        
+        <div class="loader" id="loader-predict"></div>
+        
+        <div id="predict-output" style="display: none; margin-top: 1rem;">
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="predictChart"></canvas>
+            </div>
+            <div class="analysis-content">
+                <h3>AI Rationale</h3>
+                <p id="predict-rationale" style="font-style: italic; color: var(--text-muted);"></p>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const symbol = "{{ asset_symbol }}";
+    const btnReview = document.getElementById('btn-review');
+    const reviewOutput = document.getElementById('review-output');
+    const loaderReview = document.getElementById('loader-review');
+
+    const btnPredict = document.getElementById('btn-predict');
+    const predictOutput = document.getElementById('predict-output');
+    const loaderPredict = document.getElementById('loader-predict');
+    const predictRationale = document.getElementById('predict-rationale');
+    
+    let predictChart = null;
+
+    btnReview.addEventListener('click', () => {
+        const period = document.getElementById('review-period').value;
+        reviewOutput.style.display = 'none';
+        loaderReview.style.display = 'block';
+        btnReview.disabled = true;
+
+        fetch('/api/analysis/review/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbol: symbol, period: period })
+        })
+        .then(res => res.json())
+        .then(data => {
+            loaderReview.style.display = 'none';
+            btnReview.disabled = false;
+            if (data.error) {
+                alert(`Error: ${data.error}`);
+            } else {
+                reviewOutput.style.display = 'block';
+                // Using marked.js to render Markdown from Gemini
+                reviewOutput.innerHTML = marked.parse(data.review);
+            }
+        })
+        .catch(err => {
+            loaderReview.style.display = 'none';
+            btnReview.disabled = false;
+            alert('Failed to fetch review');
+            console.error(err);
+        });
+    });
+
+    btnPredict.addEventListener('click', () => {
+        const period = document.getElementById('predict-period').value;
+        predictOutput.style.display = 'none';
+        loaderPredict.style.display = 'block';
+        btnPredict.disabled = true;
+
+        fetch('/api/analysis/predict/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbol: symbol, period: period })
+        })
+        .then(res => res.json())
+        .then(data => {
+            loaderPredict.style.display = 'none';
+            btnPredict.disabled = false;
+            
+            if (data.error) {
+                alert(`Error: ${data.error}`);
+                return;
+            }
+
+            predictOutput.style.display = 'block';
+            predictRationale.textContent = data.rationale;
+            
+            // Render Prediction Chart
+            renderPredictChart(data.predicted_prices);
+        })
+        .catch(err => {
+            loaderPredict.style.display = 'none';
+            btnPredict.disabled = false;
+            alert('Failed to run predictions');
+            console.error(err);
+        });
+    });
+
+    function renderPredictChart(predictedPrices) {
+        const ctx = document.getElementById('predictChart').getContext('2d');
+        
+        if (predictChart) {
+            predictChart.destroy();
+        }
+
+        // We'll quickly fetch the most recent data to connect the prediction
+        fetch(`/api/historical-data/?symbol=${symbol}&period=1mo`)
+            .then(res => res.json())
+            .then(histData => {
+                if(histData.error) return;
+                
+                const lastPrice = histData.prices[histData.prices.length - 1];
+                const lastDate = histData.dates[histData.dates.length - 1];
+                
+                // Construct labels
+                const labels = [...histData.dates];
+                for(let i=1; i<=predictedPrices.length; i++) {
+                    labels.push(`P+${i}`);
+                }
+                
+                // Past Prices data array
+                const pastPrices = [...histData.prices];
+                for(let i=0; i<predictedPrices.length; i++) { pastPrices.push(null); }
+                
+                // Pred Prices data array
+                const predPrices = new Array(histData.prices.length - 1).fill(null);
+                predPrices.push(lastPrice); // Connect the lines
+                predPrices.push(...predictedPrices);
+
+                predictChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Historical',
+                                data: pastPrices,
+                                borderColor: 'rgba(255, 255, 255, 0.4)',
+                                borderDash: [],
+                                tension: 0.1
+                            },
+                            {
+                                label: 'AI Prediction',
+                                data: predPrices,
+                                borderColor: 'var(--accent)',
+                                borderDash: [5, 5],
+                                backgroundColor: 'rgba(94, 106, 210, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: 'white' } } },
+                        scales: {
+                            x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#949ab1' } },
+                            y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#949ab1' } }
+                        }
+                    }
+                });
+            });
+    }
+</script>
+{% endblock %}
