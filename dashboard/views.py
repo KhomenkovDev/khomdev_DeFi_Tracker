@@ -214,9 +214,10 @@ Analyze this asset's market conditions based on these specific technical indicat
                 return JsonResponse({'review': cached_review})
                 
             api_key = os.environ.get("GEMINI_API_KEY")
+            model_id = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
             client = genai.Client(api_key=api_key)
             response = client.models.generate_content(
-                model='gemini-2.5-pro',
+                model=model_id,
                 contents=prompt,
             )
             
@@ -225,8 +226,10 @@ Analyze this asset's market conditions based on these specific technical indicat
             
         except Exception as e:
             error_message = str(e)
-            if "503" in error_message or "UNAVAILABLE" in error_message:
-                error_message = "The AI model is experiencing high demand and is unavailable. Please try again in a few moments."
+            if "quota" in error_message.lower() or "429" in error_message:
+                error_message = "API Rate Limit Exceeded. Please check your Gemini API quota."
+            elif "503" in error_message or "UNAVAILABLE" in error_message:
+                error_message = "The Gemini API is temporarily unavailable (503). Please try again later."
             return JsonResponse({'error': error_message}, status=500)
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
@@ -256,9 +259,10 @@ def api_predict(request):
             prompt = f"As a stock market prediction AI, analyze these past 30 close prices for {symbol}: {historical_prices}. Predict the price trend for the next {period}. Output your reasoning in one short paragraph, followed by a list of 5 predicted future price points that follow your trend. Format strictly as JSON with keys: 'rationale' (string) and 'predicted_prices' (array of 5 floats)."
             
             api_key = os.environ.get("GEMINI_API_KEY")
+            model_id = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
             client = genai.Client(api_key=api_key)
             response = client.models.generate_content(
-                model='gemini-2.5-pro',
+                model=model_id,
                 contents=prompt,
             )
             
@@ -274,7 +278,9 @@ def api_predict(request):
             return JsonResponse(prediction_data)
         except Exception as e:
             error_message = str(e)
-            if "503" in error_message or "UNAVAILABLE" in error_message:
-                error_message = "The AI model is experiencing high demand and is unavailable. Please try again in a few moments."
+            if "quota" in error_message.lower() or "429" in error_message:
+                error_message = "API Rate Limit Exceeded. Please check your Gemini API quota."
+            elif "503" in error_message or "UNAVAILABLE" in error_message:
+                error_message = "The Gemini API is temporarily unavailable (503). Please try again later."
             return JsonResponse({'error': error_message}, status=500)
     return JsonResponse({'error': 'Invalid request'}, status=400)

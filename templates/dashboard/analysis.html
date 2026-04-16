@@ -34,6 +34,7 @@
         
         <button id="btn-review" class="btn btn-primary">Generate Report</button>
         
+        <div id="review-error" class="error-msg" style="display: none; color: var(--danger); margin-top: 1rem;"></div>
         <div class="loader" id="loader-review"></div>
         <div id="review-output" class="analysis-content markdown-body" style="display: none;"></div>
     </section>
@@ -53,6 +54,7 @@
         
         <button id="btn-predict" class="btn btn-primary">Run Prediction Model</button>
         
+        <div id="predict-error" class="error-msg" style="display: none; color: var(--danger); margin-top: 1rem;"></div>
         <div class="loader" id="loader-predict"></div>
         
         <div id="predict-output" style="display: none; margin-top: 1rem;">
@@ -85,6 +87,7 @@
     btnReview.addEventListener('click', () => {
         const period = document.getElementById('review-period').value;
         reviewOutput.style.display = 'none';
+        document.getElementById('review-error').style.display = 'none';
         loaderReview.style.display = 'block';
         btnReview.disabled = true;
 
@@ -98,7 +101,9 @@
             loaderReview.style.display = 'none';
             btnReview.disabled = false;
             if (data.error) {
-                alert(`Error: ${data.error}`);
+                const errDiv = document.getElementById('review-error');
+                errDiv.textContent = `Error: ${data.error}`;
+                errDiv.style.display = 'block';
             } else {
                 reviewOutput.style.display = 'block';
                 // Using marked.js to render Markdown from Gemini
@@ -108,7 +113,9 @@
         .catch(err => {
             loaderReview.style.display = 'none';
             btnReview.disabled = false;
-            alert('Failed to fetch review');
+            const errDiv = document.getElementById('review-error');
+            errDiv.textContent = 'Failed to fetch review';
+            errDiv.style.display = 'block';
             console.error(err);
         });
     });
@@ -116,6 +123,7 @@
     btnPredict.addEventListener('click', () => {
         const period = document.getElementById('predict-period').value;
         predictOutput.style.display = 'none';
+        document.getElementById('predict-error').style.display = 'none';
         loaderPredict.style.display = 'block';
         btnPredict.disabled = true;
 
@@ -130,7 +138,9 @@
             btnPredict.disabled = false;
             
             if (data.error) {
-                alert(`Error: ${data.error}`);
+                const errDiv = document.getElementById('predict-error');
+                errDiv.textContent = `Error: ${data.error}`;
+                errDiv.style.display = 'block';
                 return;
             }
 
@@ -143,7 +153,9 @@
         .catch(err => {
             loaderPredict.style.display = 'none';
             btnPredict.disabled = false;
-            alert('Failed to run predictions');
+            const errDiv = document.getElementById('predict-error');
+            errDiv.textContent = 'Failed to run predictions';
+            errDiv.style.display = 'block';
             console.error(err);
         });
     });
@@ -161,21 +173,24 @@
             .then(histData => {
                 if(histData.error) return;
                 
-                const lastPrice = histData.prices[histData.prices.length - 1];
-                const lastDate = histData.dates[histData.dates.length - 1];
+                const candlesticks = histData.candlesticks;
+                if (!candlesticks || candlesticks.length === 0) return;
+                
+                const lastCandle = candlesticks[candlesticks.length - 1];
+                const lastPrice = lastCandle.close;
                 
                 // Construct labels
-                const labels = [...histData.dates];
+                const labels = candlesticks.map(c => c.time);
                 for(let i=1; i<=predictedPrices.length; i++) {
                     labels.push(`P+${i}`);
                 }
                 
                 // Past Prices data array
-                const pastPrices = [...histData.prices];
+                const pastPrices = candlesticks.map(c => c.close);
                 for(let i=0; i<predictedPrices.length; i++) { pastPrices.push(null); }
                 
                 // Pred Prices data array
-                const predPrices = new Array(histData.prices.length - 1).fill(null);
+                const predPrices = new Array(candlesticks.length - 1).fill(null);
                 predPrices.push(lastPrice); // Connect the lines
                 predPrices.push(...predictedPrices);
 

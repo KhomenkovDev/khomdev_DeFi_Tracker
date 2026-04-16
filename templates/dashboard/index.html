@@ -273,7 +273,7 @@
                 chartContainer.style.opacity = '1';
 
                 if (data.error) {
-                    alert(data.error);
+                    chartContainer.innerHTML = `<h3 style="color:var(--danger); padding:2rem;">Error: ${data.error}</h3>`;
                     return;
                 }
 
@@ -295,8 +295,7 @@
             .catch(err => {
                 chartLoader.style.display = 'none';
                 console.error('Error fetching data:', err);
-                alert("Fatal error drawing chart: " + err.message);
-                document.getElementById('tvchart').innerHTML = `<h2 style="color:red; padding:2rem;">Data Processing Error: ${err.message}</h2>`;
+                document.getElementById('tvchart').innerHTML = `<h3 style="color:var(--danger); padding:2rem;">Fatal error drawing chart: ${err.message}</h3>`;
             });
     };
 
