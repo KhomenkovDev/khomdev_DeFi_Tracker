@@ -8,6 +8,11 @@
 ![Screenshot 2](screenshots/Screenshot%202026-04-16%20at%2020.51.09.png)
 A professional, robust Django-based application designed for comprehensive financial analysis, portfolio management, and market insights. Finance Multitool combines robust backend data processing with an elegant, user-friendly frontend to deliver a powerful experience for traders and developers alike.
 
+## 🚀 Live Demo
+
+[Launch KhomDev Finance Engine Live](https://khomdev-finance-engine-87824241220.us-central1.run.app)
+*(Hosted continuously on Google Cloud Run)*
+
 ## Features
 
 - **Interactive Financial Charts**: Professional-grade, interactive financial charts powered by TradingView Lightweight Charts, perfect for visualizing historical and real-time market data.
