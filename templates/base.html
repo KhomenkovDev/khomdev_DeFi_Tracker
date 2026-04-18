@@ -3,24 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Finance Multitool{% endblock %}</title>
+    <meta name="description" content="AI-powered financial engine for stock analysis, market predictions, and real-time portfolio tracking.">
+    <meta name="keywords" content="finance, ai, stock market, prediction, analysis, portfolio">
+    <title>{% block title %}Finance AI - Intelligence in Motion{% endblock %}</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
     <nav class="navbar">
-        <a href="{% url 'dashboard_home' %}">Finance AI</a>
+        <a href="{% url 'dashboard_home' %}" class="logo">Finance AI</a>
         <div class="nav-links">
             {% if user.is_authenticated %}
-                <span>Welcome, {{ user.username }}</span>
+                <a href="{% url 'dashboard_home' %}">Dashboard</a>
+                <span style="color: var(--text-muted); font-size: 0.9rem;">{{ user.username }}</span>
                 <form method="post" action="{% url 'logout' %}" style="display:inline;">
                     {% csrf_token %}
                     <button type="submit" class="btn-nav-logout">Logout</button>
                 </form>
             {% else %}
                 <a href="{% url 'login' %}">Login</a>
-                <a href="{% url 'register' %}">Register</a>
+                <a href="{% url 'register' %}" class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-size: 0.9rem; width: auto;">Get Started</a>
             {% endif %}
         </div>
     </nav>
