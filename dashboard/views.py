@@ -36,31 +36,26 @@ def dashboard_home(request):
         categorized_assets['Your Watchlist'] = watchlist_items
 
     categorized_assets.update({
-        'Cryptocurrencies': [
+        'Layer 1 / Blue Chips': [
             {'symbol': 'BTC-USD', 'name': 'Bitcoin'},
             {'symbol': 'ETH-USD', 'name': 'Ethereum'},
             {'symbol': 'SOL-USD', 'name': 'Solana'},
             {'symbol': 'ADA-USD', 'name': 'Cardano'},
+            {'symbol': 'DOT-USD', 'name': 'Polkadot'},
+        ],
+        'DeFi & Ecosystems': [
+            {'symbol': 'AAVE-USD', 'name': 'Aave'},
+            {'symbol': 'UNI-7083-USD', 'name': 'Uniswap'},
+            {'symbol': 'LINK-USD', 'name': 'Chainlink'},
+            {'symbol': 'SNX-USD', 'name': 'Synthetix'},
+            {'symbol': 'MKR-USD', 'name': 'Maker'},
+        ],
+        'Stablecoins & Others': [
+            {'symbol': 'USDC-USD', 'name': 'USDC'},
+            {'symbol': 'USDT-USD', 'name': 'Tether'},
             {'symbol': 'XRP-USD', 'name': 'XRP'},
-        ],
-        'Precious Metals': [
-            {'symbol': 'GC=F', 'name': 'Gold'},
-            {'symbol': 'SI=F', 'name': 'Silver'},
-            {'symbol': 'PL=F', 'name': 'Platinum'},
-            {'symbol': 'PA=F', 'name': 'Palladium'},
-            {'symbol': 'HG=F', 'name': 'Copper'},
-        ],
-        'Stock Market': [
-            {'symbol': 'AAPL', 'name': 'Apple Inc.'},
-            {'symbol': 'MSFT', 'name': 'Microsoft'},
-            {'symbol': 'GOOGL', 'name': 'Alphabet'},
-            {'symbol': 'AMZN', 'name': 'Amazon'},
-            {'symbol': 'TSLA', 'name': 'Tesla'},
-            {'symbol': 'NVDA', 'name': 'Nvidia'},
-            {'symbol': 'META', 'name': 'Meta Platforms'},
-            {'symbol': '^GSPC', 'name': 'S&P 500 Index'},
-            {'symbol': '^DJI', 'name': 'Dow Jones'},
-            {'symbol': '^IXIC', 'name': 'NASDAQ'},
+            {'symbol': 'DOGE-USD', 'name': 'Dogecoin'},
+            {'symbol': 'MATIC-USD', 'name': 'Polygon'},
         ]
     })
     
@@ -197,15 +192,15 @@ def api_market_review(request):
             recent_hist = close_prices.tail(min(offset, len(close_prices)))
             start_price = round(recent_hist.iloc[0], 2) if not recent_hist.empty else end_price
             
-            prompt = f"""You are a professional financial quantitative analyst. 
-Here is technical data for the asset {symbol} over the last {period}.
+            prompt = f"""You are a professional crypto-asset quantitative analyst and DeFi specialist. 
+Here is on-chain technical data for the digital asset {symbol} over the last {period}.
 - Price change: ${start_price} to ${end_price}
-- Current Price: ${end_price}
+- Current Market Price: ${end_price}
 - 20-day SMA: ${round(sma_20, 2) if pd.notna(sma_20) else 'N/A'}
 - 50-day SMA: ${round(sma_50, 2) if pd.notna(sma_50) else 'N/A'}
 - 14-day RSI: {round(rsi, 2) if pd.notna(rsi) else 'N/A'}
 
-Analyze this asset's market conditions based on these specific technical indicators. Is it overbought? Is it in a golden cross or death cross trend? Provide a brief textual review (1-2 paragraphs) useful for a retail trader. Keep it professional."""
+Analyze this asset's market conditions based on these specific technical indicators. Is it overbought in the current crypto cycle? Is there a Golden Cross indicating a bullish trend? Provide a brief, high-conviction market review (1-2 paragraphs) useful for a DeFi yield farmer or crypto trader. Keep it professional and focus on Web3 market dynamics."""
             
             # Cache the Gemini call since it's identical for short times
             gemini_cache_key = f"gemini_{symbol}_{period}_review"

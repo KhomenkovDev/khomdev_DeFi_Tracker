@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Dashboard - Finance AI{% endblock %}
+{% block title %}Dashboard - KhomDev DeFi Tracker{% endblock %}
 
 {% block extra_head %}
 <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
@@ -32,7 +32,7 @@
 <div class="dashboard-grid">
     <aside class="glass-card controls-section">
         <div class="header-row">
-            <h3>Dashboard</h3>
+            <h3>DeFi Hub</h3>
             <button id="star-btn" class="star-btn" title="Add to Watchlist">★</button>
         </div>
         
@@ -81,7 +81,7 @@
     </aside>
 
     <section class="glass-card chart-section">
-        <h2>Advanced Candlestick Chart</h2>
+        <h2>Real-Time On-Chain Price Action</h2>
         <div class="loader" id="chart-loader" style="display: block;"></div>
         <div class="chart-container" id="tvchart" style="height: 500px;">
         </div>

@@ -6,13 +6,14 @@
      --bg-glass: rgba(255, 255, 255, 0.03);
      --border-glass: rgba(255, 255, 255, 0.1);
      --border-glass-bright: rgba(255, 255, 255, 0.18);
-     --accent: #6366f1;
-     --accent-hover: #818cf8;
-     --accent-glow: rgba(99, 102, 241, 0.4);
-     --text-main: #f8fafc;
-     --text-muted: #94a3b8;
-     --success: #10b981;
-     --danger: #ef4444;
+    --accent: #A855F7;
+    --accent-hover: #C084FC;
+    --accent-glow: rgba(168, 85, 247, 0.4);
+    --accent-secondary: #22D3EE;
+    --text-main: #F9FAFB;
+    --text-muted: #9CA3AF;
+    --success: #34D399;
+    --danger: #F87171;
      --font-heading: 'Outfit', sans-serif;
      --font-body: 'Inter', sans-serif;
  }
