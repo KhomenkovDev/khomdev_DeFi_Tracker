@@ -9,4 +9,6 @@ urlpatterns = [
     path('analysis/<str:asset_symbol>/', views.asset_analysis, name='asset_analysis'),
     path('api/analysis/review/', views.api_market_review, name='api_market_review'),
     path('api/analysis/predict/', views.api_predict, name='api_predict'),
+    path('api/search/', views.api_search_assets, name='api_search_assets'),
+    path('debug/users/', views.debug_list_users, name='debug_list_users'),
 ]

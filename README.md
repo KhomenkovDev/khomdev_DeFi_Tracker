@@ -1,4 +1,5 @@
 # KhomDev DeFi Tracker 🌐
+![DeFi Tracker](screenshots/Screenshot%202026-04-20%20at%2015.06.09.png)
 
 Advanced Web3 portfolio monitoring, real-time crypto analytics, and AI-powered market predictions. Built with Python and integrated with CoinGecko/Binance data streams.
 

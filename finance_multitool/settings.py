@@ -30,7 +30,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-3#s)9wjokv*@#z=!g*r&1
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
-CSRF_TRUSTED_ORIGINS = ['https://khomdev-finance-engine-87824241220.us-central1.run.app']
+CSRF_TRUSTED_ORIGINS = ['https://khomdev-defi-tracker-87824241220.us-central1.run.app', 'https://khomdev-finance-engine-87824241220.us-central1.run.app']
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 

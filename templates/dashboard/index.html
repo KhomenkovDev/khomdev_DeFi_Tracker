@@ -25,6 +25,38 @@
         align-items: center;
         margin-bottom: 1rem;
     }
+    .search-results {
+        position: absolute;
+        z-index: 100;
+        background: #2b2b2b;
+        border: 1px solid #444;
+        border-radius: 4px;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        display: none;
+    }
+    .search-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid #333;
+    }
+    .search-item:hover {
+        background: #3d3d3d;
+    }
+    .search-item img {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+    }
+    .search-item .symbol {
+        font-weight: bold;
+        color: var(--primary);
+    }
 </style>
 {% endblock %}
 
@@ -52,12 +84,13 @@
             </select>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" style="position: relative;">
             <label for="search-symbol">Search & Add Asset</label>
             <div style="display: flex; gap: 0.5rem;">
-                <input type="text" id="search-symbol" placeholder="Symbol (e.g. TSLA)" style="flex: 1;">
+                <input type="text" id="search-symbol" placeholder="Search (e.g. Bitcoin or BTC)" style="flex: 1;" autocomplete="off">
                 <button type="button" id="btn-add-symbol" class="btn btn-secondary" style="width: auto;">Add</button>
             </div>
+            <div id="search-results" class="search-results"></div>
             <small class="helptext" id="search-msg" style="display:none;"></small>
         </div>
 
@@ -83,6 +116,10 @@
     <section class="glass-card chart-section">
         <h2>Real-Time On-Chain Price Action</h2>
         <div class="loader" id="chart-loader" style="display: block;"></div>
+        <div id="chart-error" style="display: none; color: var(--danger); padding: 2rem; text-align: center; height: 500px; align-items: center; justify-content: center; flex-direction: column;">
+            <h3 id="error-text"></h3>
+            <p>Try searching for a different symbol or adding "-USD".</p>
+        </div>
         <div class="chart-container" id="tvchart" style="height: 500px;">
         </div>
     </section>
@@ -180,6 +217,50 @@
         updateDashboard();
     });
 
+    const searchResults = document.getElementById('search-results');
+
+    let searchTimeout = null;
+    searchSymbolInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        const query = searchSymbolInput.value.trim();
+        if (query.length < 2) {
+            searchResults.style.display = 'none';
+            return;
+        }
+
+        searchTimeout = setTimeout(async () => {
+            const res = await fetch(`/api/search/?q=${query}`);
+            const data = await res.json();
+            if (data.results && data.results.length > 0) {
+                searchResults.innerHTML = '';
+                data.results.forEach(coin => {
+                    const div = document.createElement('div');
+                    div.className = 'search-item';
+                    div.innerHTML = `
+                        <img src="${coin.thumb}" alt="">
+                        <span class="symbol">${coin.symbol}</span>
+                        <span>${coin.name}</span>
+                    `;
+                    div.addEventListener('click', () => {
+                        searchSymbolInput.value = coin.yfinance_symbol;
+                        searchResults.style.display = 'none';
+                        btnAddSymbol.click();
+                    });
+                    searchResults.appendChild(div);
+                });
+                searchResults.style.display = 'block';
+            } else {
+                searchResults.style.display = 'none';
+            }
+        }, 300);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!searchSymbolInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.style.display = 'none';
+        }
+    });
+
     btnAddSymbol.addEventListener('click', async () => {
         const symbol = searchSymbolInput.value.toUpperCase().trim();
         if (!symbol) return;
@@ -195,7 +276,7 @@
             
             if (data.error) {
                 searchMsg.style.color = 'var(--danger)';
-                searchMsg.textContent = 'Invalid symbol or no data found.';
+                searchMsg.textContent = data.error;
             } else {
                 searchMsg.style.color = 'var(--success)';
                 searchMsg.textContent = 'Added successfully!';
@@ -209,14 +290,19 @@
                     categorySelect.appendChild(opt);
                 }
                 
-                assetsData['Custom Assets'].push({symbol: symbol, name: symbol});
+                // Avoid duplicates in assetsData
+                if (!assetsData['Custom Assets'].some(a => a.symbol === data.symbol)) {
+                    assetsData['Custom Assets'].push({symbol: data.symbol, name: data.symbol});
+                }
+                
                 categorySelect.value = 'Custom Assets';
                 populateAssets('Custom Assets');
-                assetSelect.value = symbol;
-                currentSymbol = symbol;
+                assetSelect.value = data.symbol;
+                currentSymbol = data.symbol;
                 checkStarred();
                 updateDashboard();
                 searchSymbolInput.value = '';
+                searchResults.style.display = 'none';
             }
         } catch (err) {
             searchMsg.style.color = 'var(--danger)';
@@ -257,10 +343,24 @@
         });
     };
 
+    const showError = (msg) => {
+        chartLoader.style.display = 'none';
+        chartContainer.style.display = 'none';
+        const errDiv = document.getElementById('chart-error');
+        errDiv.style.display = 'flex';
+        document.getElementById('error-text').textContent = msg;
+    };
+
+    const hideError = () => {
+        document.getElementById('chart-error').style.display = 'none';
+        chartContainer.style.display = 'block';
+    };
+
     const updateDashboard = () => {
         if (!currentSymbol) return;
 
         chartLoader.style.display = 'block';
+        hideError();
         chartContainer.style.opacity = '0.3';
         
         // Update analysis button link
@@ -273,7 +373,7 @@
                 chartContainer.style.opacity = '1';
 
                 if (data.error) {
-                    chartContainer.innerHTML = `<h3 style="color:var(--danger); padding:2rem;">Error: ${data.error}</h3>`;
+                    showError(`Error: ${data.error}`);
                     return;
                 }
 
@@ -295,7 +395,7 @@
             .catch(err => {
                 chartLoader.style.display = 'none';
                 console.error('Error fetching data:', err);
-                document.getElementById('tvchart').innerHTML = `<h3 style="color:var(--danger); padding:2rem;">Fatal error drawing chart: ${err.message}</h3>`;
+                showError(`Fatal error drawing chart: ${err.message}`);
             });
     };
 
