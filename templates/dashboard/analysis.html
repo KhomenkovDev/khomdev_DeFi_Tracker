@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ asset_symbol }} AI Analysis - KhomDev DeFi{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>AI Analysis for <span style="color:var(--accent)">{{ asset_symbol }}</span></h1>
+    <a href="{% url 'dashboard_home' %}" class="back-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back to Dashboard
+    </a>
+</div>
+
+<div class="dashboard-grid">
+
+    <!-- Market Review -->
+    <section class="glass-card analysis-section">
+        <div class="analysis-header">
+            <h2>Market Review</h2>
+            <span class="ai-badge" id="review-ai-badge" style="display:none"></span>
+        </div>
+        <p class="text-muted">Claude AI analyzes historical price trends, SMA crossovers, and RSI signals.</p>
+
+        <div class="form-group" style="margin-top:1rem">
+            <label>Lookback Period</label>
+            <select id="review-period">
+                <option value="1mo">Last 1 Month</option>
+                <option value="3mo">Last 3 Months</option>
+                <option value="6mo">Last 6 Months</option>
+                <option value="1y">Last 1 Year</option>
+            </select>
+        </div>
+
+        <button id="btn-review" class="btn btn-primary">Generate Report</button>
+
+        <div id="review-error" style="display:none;color:var(--danger);margin-top:1rem;font-size:0.9rem"></div>
+        <div class="loader" id="loader-review" style="display:none"></div>
+        <div id="review-output" class="analysis-content markdown-body" style="display:none"></div>
+    </section>
+
+    <!-- Price Predictions -->
+    <section class="glass-card analysis-section">
+        <div class="analysis-header">
+            <h2>Price Predictions</h2>
+            <span class="ai-badge ai-badge-secondary">Experimental</span>
+        </div>
+        <p class="text-muted">Claude AI predicts short-term price movements based on recent chart patterns.</p>
+
+        <div class="form-group" style="margin-top:1rem">
+            <label>Prediction Horizon</label>
+            <select id="predict-period">
+                <option value="5 days">Next 5 Days</option>
+                <option value="1 month">Next 1 Month</option>
+            </select>
+        </div>
+
+        <button id="btn-predict" class="btn btn-primary">Run Prediction Model</button>
+
+        <div id="predict-error" style="display:none;color:var(--danger);margin-top:1rem;font-size:0.9rem"></div>
+        <div class="loader" id="loader-predict" style="display:none"></div>
+
+        <div id="predict-output" style="display:none;margin-top:1.5rem">
+            <div class="chart-container" style="height:280px">
+                <canvas id="predictChart"></canvas>
+            </div>
+            <div class="analysis-content" style="margin-top:1rem">
+                <h3 style="font-size:0.9rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:0.5rem">AI Rationale</h3>
+                <p id="predict-rationale" style="font-style:italic;color:var(--text-muted);font-size:0.9rem;line-height:1.6"></p>
+            </div>
+        </div>
+    </section>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const symbol = "{{ asset_symbol }}";
+    let predictChart = null;
+
+    // ── Market Review ────────────────────────────────────────────────────────
+    document.getElementById('btn-review').addEventListener('click', async () => {
+        const period = document.getElementById('review-period').value;
+        const btn = document.getElementById('btn-review');
+        const loader = document.getElementById('loader-review');
+        const output = document.getElementById('review-output');
+        const errDiv = document.getElementById('review-error');
+        const aiBadge = document.getElementById('review-ai-badge');
+
+        btn.disabled = true;
+        btn.textContent = 'Analyzing...';
+        loader.style.display = 'block';
+        output.style.display = 'none';
+        errDiv.style.display = 'none';
+
+        try {
+            const res = await fetch('/api/analysis/review/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbol, period })
+            });
+            const data = await res.json();
+
+            if (data.error) {
+                errDiv.textContent = data.error;
+                errDiv.style.display = 'block';
+            } else {
+                output.innerHTML = marked.parse(data.review);
+                output.style.display = 'block';
+
+                // Show AI model badge
+                if (data.ai_model) {
+                    const labels = { claude: '⚡ Claude AI', gemini: '✦ Gemini AI', cached: '⚡ Cached' };
+                    aiBadge.textContent = labels[data.ai_model] || data.ai_model;
+                    aiBadge.className = `ai-badge ${data.ai_model === 'claude' ? '' : 'ai-badge-secondary'}`;
+                    aiBadge.style.display = 'inline-block';
+                }
+            }
+        } catch (err) {
+            errDiv.textContent = 'Network error: ' + err.message;
+            errDiv.style.display = 'block';
+        } finally {
+            loader.style.display = 'none';
+            btn.disabled = false;
+            btn.textContent = 'Generate Report';
+        }
+    });
+
+    // ── Price Prediction ─────────────────────────────────────────────────────
+    document.getElementById('btn-predict').addEventListener('click', async () => {
+        const period = document.getElementById('predict-period').value;
+        const btn = document.getElementById('btn-predict');
+        const loader = document.getElementById('loader-predict');
+        const output = document.getElementById('predict-output');
+        const errDiv = document.getElementById('predict-error');
+
+        btn.disabled = true;
+        btn.textContent = 'Predicting...';
+        loader.style.display = 'block';
+        output.style.display = 'none';
+        errDiv.style.display = 'none';
+
+        try {
+            const res = await fetch('/api/analysis/predict/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbol, period })
+            });
+            const data = await res.json();
+
+            if (data.error) {
+                errDiv.textContent = data.error;
+                errDiv.style.display = 'block';
+            } else {
+                document.getElementById('predict-rationale').textContent = data.rationale;
+
+                const prices = data.predicted_prices;
+                const labels = prices.map((_, i) => `Point ${i + 1}`);
+
+                if (predictChart) predictChart.destroy();
+                predictChart = new Chart(document.getElementById('predictChart'), {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Predicted Price',
+                            data: prices,
+                            borderColor: '#A855F7',
+                            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#A855F7',
+                            pointRadius: 5,
+                            fill: true,
+                            tension: 0.4,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { color: '#9CA3AF' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            y: { ticks: { color: '#9CA3AF' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
+                    }
+                });
+
+                output.style.display = 'block';
+            }
+        } catch (err) {
+            errDiv.textContent = 'Network error: ' + err.message;
+            errDiv.style.display = 'block';
+        } finally {
+            loader.style.display = 'none';
+            btn.disabled = false;
+            btn.textContent = 'Run Prediction Model';
+        }
+    });
+</script>
+{% endblock %}

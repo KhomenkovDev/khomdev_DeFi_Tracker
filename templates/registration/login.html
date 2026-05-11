@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In - KhomDev DeFi{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="glass-card auth-card">
+        <div class="auth-logo">KhomDev <span class="text-accent">DeFi</span></div>
+        <p class="auth-subtitle">Secure access to your intelligence engine</p>
+
+        {% if messages %}
+        <div class="auth-messages">
+            {% for message in messages %}
+            <div class="auth-alert auth-alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" class="auth-form">
+            {% csrf_token %}
+            {% if request.GET.next %}
+            <input type="hidden" name="next" value="{{ request.GET.next }}">
+            {% endif %}
+
+            <div class="form-group">
+                <label for="id_username">Username</label>
+                <input type="text" id="id_username" name="username" value="{{ username|default:'' }}"
+                       autocomplete="username" required autofocus placeholder="Enter your username">
+            </div>
+
+            <div class="form-group">
+                <label for="id_password">Password</label>
+                <input type="password" id="id_password" name="password"
+                       autocomplete="current-password" required placeholder="Enter your password">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top:0.5rem">Sign In</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Don't have an account?
+                <a href="{% url 'register' %}">Create one now</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
