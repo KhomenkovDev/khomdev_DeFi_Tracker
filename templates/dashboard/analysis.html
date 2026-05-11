@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ asset_symbol }} AI Analysis - KhomDev DeFi{% endblock %}
+{% block title %}{{ asset_symbol }} Analysis - {{ APP_NAME }}{% endblock %}
 
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -24,7 +24,7 @@
             <h2>Market Review</h2>
             <span class="ai-badge" id="review-ai-badge" style="display:none"></span>
         </div>
-        <p class="text-muted">Claude AI analyzes historical price trends, SMA crossovers, and RSI signals.</p>
+        <p class="text-muted">AI-generated analysis of historical price trends, SMA crossovers, and RSI signals.</p>
 
         <div class="form-group" style="margin-top:1rem">
             <label>Lookback Period</label>
@@ -49,7 +49,7 @@
             <h2>Price Predictions</h2>
             <span class="ai-badge ai-badge-secondary">Experimental</span>
         </div>
-        <p class="text-muted">Claude AI predicts short-term price movements based on recent chart patterns.</p>
+        <p class="text-muted">AI-generated short-term price predictions based on recent chart patterns.</p>
 
         <div class="form-group" style="margin-top:1rem">
             <label>Prediction Horizon</label>

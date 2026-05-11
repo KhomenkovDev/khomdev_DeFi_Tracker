@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Dashboard - KhomDev DeFi Tracker{% endblock %}
+{% block title %}Dashboard - {{ APP_NAME }}{% endblock %}
 
 {% block extra_head %}
 <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
@@ -114,7 +114,7 @@
     </aside>
 
     <section class="glass-card chart-section">
-        <h2>Real-Time On-Chain Price Action</h2>
+        <h2>Price Chart</h2>
         <div class="loader" id="chart-loader" style="display: block;"></div>
         <div id="chart-error" style="display: none; color: var(--danger); padding: 2rem; text-align: center; height: 500px; align-items: center; justify-content: center; flex-direction: column;">
             <h3 id="error-text"></h3>

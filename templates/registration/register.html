@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
-{% block title %}Create Account - KhomDev DeFi{% endblock %}
+{% block title %}Create Account - {{ APP_NAME }}{% endblock %}
 
 {% block content %}
 <div class="auth-container">
     <div class="glass-card auth-card">
-        <div class="auth-logo">KhomDev <span class="text-accent">DeFi</span></div>
-        <p class="auth-subtitle">Join the future of intelligent DeFi tracking</p>
+        <div class="auth-logo">{{ APP_NAME }}</div>
+        <p class="auth-subtitle">Create a watchlist account</p>
 
         {% if messages %}
         <div class="auth-messages">
