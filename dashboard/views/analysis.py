@@ -27,6 +27,10 @@ _MAPPED_ERRORS = {
 
 
 def _map_error_message(raw: str) -> str:
+    """
+    Translates raw API or provider error strings into user-friendly messages.
+    Performs a case-insensitive fuzzy match against common error patterns.
+    """
     lowered = raw.lower()
     for key, msg in _MAPPED_ERRORS.items():
         if key in lowered:
@@ -36,11 +40,22 @@ def _map_error_message(raw: str) -> str:
 
 @login_required
 def asset_analysis(request, asset_symbol):
+    """
+    Renders the primary analysis dashboard for a specific asset.
+    The actual data fetching is triggered via frontend AJAX to the API endpoints.
+    """
     return render(request, "dashboard/analysis.html", {"asset_symbol": asset_symbol})
 
 
 @login_required
 def api_market_review(request):
+    """
+    Backend service for AI-powered market reviews.
+    1. Fetches historical data from yfinance.
+    2. Computes technical indicators (SMA, RSI) using Pandas.
+    3. Prompts the configured LLM (Claude/Gemini) for a technical summary.
+    4. Caches results for 1 hour to optimize API costs.
+    """
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request"}, status=400)
 
@@ -101,6 +116,11 @@ and actionable insight. Use markdown formatting."""
 
 @login_required
 def api_predict(request):
+    """
+    Generates quantitative price predictions using LLM pattern recognition.
+    Analyzes the last 30 close prices to forecast a 5-step future trend.
+    Returns structured JSON with a rationale and predicted float values.
+    """
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request"}, status=400)
 
