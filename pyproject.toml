@@ -70,4 +70,4 @@ strict = true
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "finance_multitool.settings.dev"
 testpaths = ["dashboard/tests"]
-strict_markers = true
+
