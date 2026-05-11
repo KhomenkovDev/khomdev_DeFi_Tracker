@@ -42,9 +42,7 @@ class TestGetProvider:
 
 class TestAnthropicProvider:
     def test_generates_text(self):
-        provider = AnthropicProvider(
-            api_key="sk-test", model="claude-sonnet-4-20250514"
-        )
+        provider = AnthropicProvider(api_key="sk-test", model="claude-sonnet-4-20250514")
         with patch.object(provider, "_get_client") as mock_client_get:
             mock_client = mock_client_get.return_value
             mock_response = mock_client.messages.create.return_value
@@ -85,8 +83,6 @@ class TestGenerateAnalysis:
     @patch("dashboard.services.ai.get_provider")
     def test_json_mode_strips_code_fences(self, mock_get_provider):
         mock_provider = mock_get_provider.return_value
-        mock_provider.generate.return_value = (
-            '```json\n{"key": "value"}\n```'
-        )
+        mock_provider.generate.return_value = '```json\n{"key": "value"}\n```'
         result = generate_analysis("Return JSON", response_json=True)
         assert result == {"key": "value"}

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
 from dashboard.services.indicators import rsi, sma
 
@@ -26,9 +25,7 @@ class TestSMA:
 
 class TestRSI:
     def test_rsi_returns_value_between_0_and_100(self):
-        series = pd.Series(
-            [100 + i + (1 if i % 2 == 0 else -1) for i in range(20)]
-        )
+        series = pd.Series([100 + i + (1 if i % 2 == 0 else -1) for i in range(20)])
         result = rsi(series, 14)
         assert result is not None
         assert 0 <= result <= 100

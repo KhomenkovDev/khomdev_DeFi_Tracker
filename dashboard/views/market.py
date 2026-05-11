@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import logging
 
-import pandas as pd
 import requests
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.http import JsonResponse
-from django.conf import settings
 
 from ..services.cache import hist_cache_key, search_cache_key
 from ..services.market_data import get_history
@@ -53,12 +51,8 @@ def get_historical_data(request):
         return JsonResponse({"error": "No valid data points found."}, status=404)
 
     current_price = candlesticks[-1]["close"]
-    prev_price = (
-        candlesticks[-2]["close"] if len(candlesticks) > 1 else current_price
-    )
-    change_pct = (
-        round(((current_price - prev_price) / prev_price) * 100, 2) if prev_price else 0
-    )
+    prev_price = candlesticks[-2]["close"] if len(candlesticks) > 1 else current_price
+    change_pct = round(((current_price - prev_price) / prev_price) * 100, 2) if prev_price else 0
 
     response_data = {
         "symbol": final_symbol,
@@ -83,9 +77,7 @@ def api_search_assets(request):
 
     try:
         url = f"https://api.coingecko.com/api/v3/search?query={query}"
-        response = requests.get(
-            url, headers={"accept": "application/json"}, timeout=5
-        )
+        response = requests.get(url, headers={"accept": "application/json"}, timeout=5)
         data = response.json()
         coins = data.get("coins", [])[:10]
         results = []
@@ -104,9 +96,7 @@ def api_search_assets(request):
         return JsonResponse({"results": results})
     except requests.RequestException:
         logger.exception("CoinGecko search failed for query: %s", query)
-        return JsonResponse(
-            {"error": "Search service temporarily unavailable."}, status=502
-        )
+        return JsonResponse({"error": "Search service temporarily unavailable."}, status=502)
     except Exception:
         logger.exception("Unexpected error in asset search")
         return JsonResponse({"error": "An unexpected error occurred."}, status=500)

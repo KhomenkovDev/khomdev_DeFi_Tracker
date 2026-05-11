@@ -69,18 +69,16 @@ def api_market_review(request):
         end_price = round(float(close_prices.iloc[-1]), 2)
         offset = {"1mo": 30, "3mo": 90, "6mo": 180}.get(period, 365)
         recent_hist = close_prices.tail(min(offset, len(close_prices)))
-        start_price = (
-            round(float(recent_hist.iloc[0]), 2) if not recent_hist.empty else end_price
-        )
+        start_price = round(float(recent_hist.iloc[0]), 2) if not recent_hist.empty else end_price
 
         prompt = f"""You are a professional crypto-asset quantitative analyst.
 Analyze the digital asset {final_symbol} over the last {period} using these technical indicators:
 
 - Price range: ${start_price} to ${end_price}
 - Current price: ${end_price}
-- 20-day SMA: {sma_20 if sma_20 else 'N/A'}
-- 50-day SMA: {sma_50 if sma_50 else 'N/A'}
-- 14-day RSI: {rsi_val if rsi_val else 'N/A'}
+- 20-day SMA: {sma_20 if sma_20 else "N/A"}
+- 50-day SMA: {sma_50 if sma_50 else "N/A"}
+- 14-day RSI: {rsi_val if rsi_val else "N/A"}
 
 Write a concise market review (2 short paragraphs) covering:
 trend direction, overbought/oversold signals, any Golden/Death Cross signals,
@@ -121,33 +119,28 @@ def api_predict(request):
         except ValueError:
             return JsonResponse({"error": "No data for this asset."}, status=404)
 
-        historical_prices = [
-            round(float(x), 2) for x in hist["Close"].tolist()[-30:]
-        ]
+        historical_prices = [round(float(x), 2) for x in hist["Close"].tolist()[-30:]]
 
-        prompt = f"""You are a quantitative crypto analyst. Analyze these 30 recent close prices for {final_symbol}:
-{historical_prices}
-
-Predict the price trend for the next {period}. Be analytical about momentum,
-support/resistance levels, and recent volatility.
-
-Respond ONLY with valid JSON (no markdown, no backticks):
-{{"rationale": "your 1-2 sentence reasoning", "predicted_prices": [5 float values]}}"""
+        prompt = (
+            f"You are a quantitative crypto analyst. Analyze these 30 recent "
+            f"close prices for {final_symbol}:\n{historical_prices}\n\n"
+            f"Predict the price trend for the next {period}. Be analytical about "
+            f"momentum, support/resistance levels, and recent volatility.\n\n"
+            f"Respond ONLY with valid JSON (no markdown, no backticks):\n"
+            f'{{"rationale": "your 1-2 sentence reasoning", '
+            f'"predicted_prices": [5 float values]}}'
+        )
 
         result = generate_analysis(prompt, response_json=True)
 
         if not isinstance(result, dict):
-            return JsonResponse(
-                {"error": "AI returned unexpected format."}, status=502
-            )
+            return JsonResponse({"error": "AI returned unexpected format."}, status=502)
 
         cache.set(cache_key, result, 60 * 60)
         return JsonResponse(result)
 
     except json.JSONDecodeError:
-        return JsonResponse(
-            {"error": "AI returned malformed JSON. Please try again."}, status=502
-        )
+        return JsonResponse({"error": "AI returned malformed JSON. Please try again."}, status=502)
     except ValueError as e:
         return JsonResponse({"error": _map_error_message(str(e))}, status=500)
     except Exception:

@@ -4,7 +4,6 @@ import os
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.auth.models import User
 from django.db import connection
 from django.http import JsonResponse
 
@@ -16,7 +15,6 @@ def debug_auth_status(request):
 
     db_engine = connection.settings_dict.get("ENGINE", "")
     is_sqlite = "sqlite" in db_engine
-    users = list(User.objects.values_list("username", flat=True))
 
     return JsonResponse(
         {
@@ -35,11 +33,7 @@ def debug_auth_status(request):
                 "active_ai": (
                     "claude"
                     if os.environ.get("ANTHROPIC_API_KEY")
-                    else (
-                        "gemini"
-                        if os.environ.get("GEMINI_API_KEY")
-                        else "none"
-                    )
+                    else ("gemini" if os.environ.get("GEMINI_API_KEY") else "none")
                 ),
             },
         }

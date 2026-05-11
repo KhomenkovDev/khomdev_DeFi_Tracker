@@ -20,9 +20,7 @@ def api_toggle_watchlist(request):
         data = json.loads(request.body)
         symbol = data.get("symbol")
         name = data.get("name", symbol)
-        asset, created = UserAsset.objects.get_or_create(
-            user=request.user, symbol=symbol
-        )
+        asset, created = UserAsset.objects.get_or_create(user=request.user, symbol=symbol)
         if not created:
             asset.delete()
             return JsonResponse({"status": "removed", "symbol": symbol})

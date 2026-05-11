@@ -9,9 +9,7 @@ from ..models import UserAsset
 @login_required
 def dashboard_home(request):
     user_assets = UserAsset.objects.filter(user=request.user)
-    watchlist_items = [
-        {"symbol": ua.symbol, "name": ua.name or ua.symbol} for ua in user_assets
-    ]
+    watchlist_items = [{"symbol": ua.symbol, "name": ua.name or ua.symbol} for ua in user_assets]
 
     categorized_assets: dict = {}
     if watchlist_items:

@@ -39,9 +39,7 @@ class TestLoginView:
         assert response.status_code == 200
 
     def test_post_with_unknown_user_shows_error(self, db, client: Client):
-        response = client.post(
-            "/login/", {"username": "nobody", "password": "whatever"}
-        )
+        response = client.post("/login/", {"username": "nobody", "password": "whatever"})
         assert response.status_code == 200
 
 

@@ -1,10 +1,5 @@
 import logging
 import os
-from pathlib import Path
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 from .base import *  # noqa: F403, F401
 
@@ -28,7 +23,7 @@ CSRF_TRUSTED_ORIGINS = []
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",  # noqa: F405
     }
 }
 

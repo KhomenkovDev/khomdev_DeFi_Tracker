@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Protocol
+from typing import Any, Protocol
 
 from django.conf import settings
 
@@ -17,24 +17,22 @@ class AIProvider(Protocol):
 
 
 class AnthropicProvider:
-    _client = None
+    _client: Any = None
 
     def __init__(self, api_key: str, model: str) -> None:
         self.api_key = api_key
         self.model = model
 
-    def _get_client(self):
+    def _get_client(self) -> Any:
         if AnthropicProvider._client is None:
             import anthropic
 
             AnthropicProvider._client = anthropic.Anthropic(api_key=self.api_key)
         return AnthropicProvider._client
 
-    def generate(
-        self, prompt: str, *, max_tokens: int = 1024, response_json: bool = False
-    ) -> str:
+    def generate(self, prompt: str, *, max_tokens: int = 1024, response_json: bool = False) -> str:
         client = self._get_client()
-        extra_kwargs = {}
+        extra_kwargs: dict[str, Any] = {}
         if response_json:
             prompt += (
                 "\n\nYou MUST respond with valid JSON only. "
@@ -47,29 +45,26 @@ class AnthropicProvider:
             messages=[{"role": "user", "content": prompt}],
             **extra_kwargs,
         )
-        text = message.content[0].text
-        return text
+        return str(message.content[0].text)
 
 
 class GeminiProvider:
-    _client = None
+    _client: Any = None
 
     def __init__(self, api_key: str, model: str) -> None:
         self.api_key = api_key
         self.model = model
 
-    def _get_client(self):
+    def _get_client(self) -> Any:
         if GeminiProvider._client is None:
             from google import genai
 
             GeminiProvider._client = genai.Client(api_key=self.api_key)
         return GeminiProvider._client
 
-    def generate(
-        self, prompt: str, *, max_tokens: int = 1024, response_json: bool = False
-    ) -> str:
+    def generate(self, prompt: str, *, max_tokens: int = 1024, response_json: bool = False) -> str:
         client = self._get_client()
-        kwargs = {
+        kwargs: dict[str, Any] = {
             "model": self.model,
             "contents": prompt,
         }
@@ -79,7 +74,7 @@ class GeminiProvider:
                 "max_output_tokens": max_tokens,
             }
         response = client.models.generate_content(**kwargs)
-        return response.text or "Analysis currently unavailable."
+        return str(response.text or "Analysis currently unavailable.")
 
 
 def get_provider() -> AIProvider:
@@ -117,13 +112,14 @@ def _strip_code_fences(text: str) -> str:
 
 def generate_analysis(
     prompt: str, *, max_tokens: int = 1024, response_json: bool = False
-) -> str | dict:
+) -> str | dict[str, Any]:
     provider = get_provider()
     raw = provider.generate(prompt, max_tokens=max_tokens, response_json=response_json)
     if response_json:
         cleaned = _strip_code_fences(raw)
         try:
-            return json.loads(cleaned)
+            result: dict[str, Any] = json.loads(cleaned)
+            return result
         except json.JSONDecodeError:
             logger.error("Provider returned invalid JSON: %s", raw[:200])
             raise

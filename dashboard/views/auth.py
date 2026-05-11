@@ -16,9 +16,7 @@ def register(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(
-                request, f"Welcome, {user.username}! Your account has been created."
-            )
+            messages.success(request, f"Welcome, {user.username}! Your account has been created.")
             return redirect("dashboard_home")
         else:
             for field, errors in form.errors.items():
@@ -50,11 +48,7 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
-            next_url = (
-                request.GET.get("next")
-                or request.POST.get("next")
-                or "dashboard_home"
-            )
+            next_url = request.GET.get("next") or request.POST.get("next") or "dashboard_home"
             return redirect(next_url)
         else:
             if User.objects.filter(username=username).exists():

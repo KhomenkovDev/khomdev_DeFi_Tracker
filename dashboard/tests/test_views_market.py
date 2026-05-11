@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
 from django.test import Client
 
 
@@ -37,9 +36,7 @@ class TestHistoricalDataView:
         assert data["current_price"] == 105.0
 
     @patch("dashboard.views.market.get_history")
-    def test_returns_404_for_unknown_symbol(
-        self, mock_get_history, logged_in_client: Client
-    ):
+    def test_returns_404_for_unknown_symbol(self, mock_get_history, logged_in_client: Client):
         mock_get_history.side_effect = ValueError("No data found for UNKNOWN.")
         response = logged_in_client.get(self.URL, {"symbol": "UNKNOWN"})
         assert response.status_code == 404
