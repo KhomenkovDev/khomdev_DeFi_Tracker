@@ -16,6 +16,8 @@ COPY . .
 
 RUN python manage.py collectstatic --noinput
 
-EXPOSE $PORT
+ENV PORT=8080
 
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 finance_multitool.wsgi:application
+EXPOSE 8080
+
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT} --workers 1 --threads 8 --timeout 0 finance_multitool.wsgi:application"]
