@@ -152,6 +152,8 @@
     let currentPeriod = '1mo';
     let chart = null;
     let candlestickSeries = null;
+    let sma20Series = null;
+    let sma50Series = null;
     
     const assetsData = JSON.parse(document.getElementById('assets-data').textContent);
     let starredSymbols = JSON.parse(document.getElementById('starred-symbols-data').textContent);
@@ -190,14 +192,31 @@
         
         if (data.status === 'added') {
             starredSymbols.push(currentSymbol);
+            if (!assetsData['Your Watchlist']) {
+                assetsData['Your Watchlist'] = [];
+                // Add category if it was missing
+                const opt = document.createElement('option');
+                opt.value = 'Your Watchlist';
+                opt.textContent = 'Your Watchlist';
+                categorySelect.insertBefore(opt, categorySelect.firstChild);
+            }
+            if (!assetsData['Your Watchlist'].some(a => a.symbol === currentSymbol)) {
+                assetsData['Your Watchlist'].push({symbol: currentSymbol, name: currentSymbol});
+            }
         } else if (data.status === 'removed') {
             starredSymbols = starredSymbols.filter(s => s !== currentSymbol);
+            if (assetsData['Your Watchlist']) {
+                assetsData['Your Watchlist'] = assetsData['Your Watchlist'].filter(a => a.symbol !== currentSymbol);
+                if (assetsData['Your Watchlist'].length === 0) {
+                    delete assetsData['Your Watchlist'];
+                    Array.from(categorySelect.options).forEach(opt => {
+                        if (opt.value === 'Your Watchlist') opt.remove();
+                    });
+                }
+            }
         }
         checkStarred();
-        
-        // Wait, we should probably update the assetsData 'Your Watchlist' category dynamically, 
-        // but for simplicity, we let the user refresh to see it in the dropdown. 
-        // The core functionality works cleanly!
+        populateAssets(categorySelect.value);
     };
     starBtn.addEventListener('click', toggleStar);
 
@@ -354,6 +373,18 @@
             wickDownColor: '#ef5350'
         });
 
+        sma20Series = chart.addLineSeries({
+            color: 'rgba(168, 85, 247, 0.7)',
+            lineWidth: 2,
+            title: 'SMA 20',
+        });
+
+        sma50Series = chart.addLineSeries({
+            color: 'rgba(34, 211, 238, 0.7)',
+            lineWidth: 2,
+            title: 'SMA 50',
+        });
+
         window.addEventListener('resize', () => {
             chart.resize(chartContainer.clientWidth, chartContainer.clientHeight);
         });
@@ -394,18 +425,24 @@
                 }
 
                 // Update Widgets
-                priceDisplay.textContent = `$${data.current_price}`;
-                changeDisplay.textContent = `${data.change_pct}%`;
-                if (data.change_pct >= 0) {
-                    changeDisplay.className = 'price-change change-up';
-                    changeDisplay.innerHTML = `↑ ${data.change_pct}%`;
-                } else {
-                    changeDisplay.className = 'price-change change-down';
-                    changeDisplay.innerHTML = `↓ ${Math.abs(data.change_pct)}%`;
-                }
+                updatePriceDisplay(data.current_price, data.change_pct);
 
                 // Update Lightweight Chart
                 candlestickSeries.setData(data.candlesticks);
+                
+                // Indicators
+                if (data.indicators) {
+                    const formatIndicator = (vals) => {
+                        return data.candlesticks.map((c, i) => ({
+                            time: c.time,
+                            value: vals[i]
+                        })).filter(v => v.value !== null);
+                    };
+
+                    if (data.indicators.sma_20) sma20Series.setData(formatIndicator(data.indicators.sma_20));
+                    if (data.indicators.sma_50) sma50Series.setData(formatIndicator(data.indicators.sma_50));
+                }
+
                 chart.timeScale().fitContent();
             })
             .catch(err => {
@@ -415,10 +452,58 @@
             });
     };
 
+    const updatePriceDisplay = (price, change) => {
+        const oldPrice = priceDisplay.textContent;
+        priceDisplay.textContent = `$${price}`;
+        
+        // Pulse effect
+        if (oldPrice !== `$${price}`) {
+            priceDisplay.style.transition = 'none';
+            priceDisplay.style.color = 'var(--accent)';
+            setTimeout(() => {
+                priceDisplay.style.transition = 'color 1s';
+                priceDisplay.style.color = 'var(--text-main)';
+            }, 100);
+        }
+
+        changeDisplay.textContent = `${change}%`;
+        if (change >= 0) {
+            changeDisplay.className = 'price-change change-up';
+            changeDisplay.innerHTML = `↑ ${change}%`;
+        } else {
+            changeDisplay.className = 'price-change change-down';
+            changeDisplay.innerHTML = `↓ ${Math.abs(change)}%`;
+        }
+    };
+
+    let pricePollInterval = null;
+    const startPricePolling = () => {
+        if (pricePollInterval) clearInterval(pricePollInterval);
+        
+        pricePollInterval = setInterval(async () => {
+            if (!currentSymbol) return;
+            try {
+                const res = await fetch(`/api/historical-data/?symbol=${currentSymbol}&period=1d`);
+                const data = await res.json();
+                if (!data.error) {
+                    updatePriceDisplay(data.current_price, data.change_pct);
+                    // Also update the last candle on the chart for a real-time feel
+                    if (candlesticks && data.candlesticks && data.candlesticks.length > 0) {
+                        const lastCandle = data.candlesticks[data.candlesticks.length - 1];
+                        candlestickSeries.update(lastCandle);
+                    }
+                }
+            } catch (err) {
+                console.error('Price poll failed:', err);
+            }
+        }, 15000); // Poll every 15 seconds
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
         try {
             initChart();
             updateDashboard();
+            startPricePolling();
 
             document.getElementById('period-buttons').addEventListener('click', (e) => {
                 if (e.target.tagName === 'BUTTON') {

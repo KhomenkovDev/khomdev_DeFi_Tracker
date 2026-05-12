@@ -16,38 +16,6 @@ class AIProvider(Protocol):
     ) -> str: ...
 
 
-class AnthropicProvider:
-    _client: Any = None
-
-    def __init__(self, api_key: str, model: str) -> None:
-        self.api_key = api_key
-        self.model = model
-
-    def _get_client(self) -> Any:
-        if AnthropicProvider._client is None:
-            import anthropic
-
-            AnthropicProvider._client = anthropic.Anthropic(api_key=self.api_key)
-        return AnthropicProvider._client
-
-    def generate(self, prompt: str, *, max_tokens: int = 1024, response_json: bool = False) -> str:
-        client = self._get_client()
-        extra_kwargs: dict[str, Any] = {}
-        if response_json:
-            prompt += (
-                "\n\nYou MUST respond with valid JSON only. "
-                "No markdown formatting, no backticks, no explanation."
-            )
-            extra_kwargs["extra_headers"] = {"anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15"}
-        message = client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
-            messages=[{"role": "user", "content": prompt}],
-            **extra_kwargs,
-        )
-        return str(message.content[0].text)
-
-
 class GeminiProvider:
     _client: Any = None
 
@@ -78,14 +46,6 @@ class GeminiProvider:
 
 
 def get_provider() -> AIProvider:
-    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
-    if anthropic_key:
-        logger.info("Using Anthropic AI provider")
-        return AnthropicProvider(
-            api_key=anthropic_key,
-            model=settings.ANTHROPIC_MODEL,
-        )
-
     gemini_key = os.environ.get("GEMINI_API_KEY")
     if gemini_key:
         logger.info("Using Gemini AI provider")
@@ -95,7 +55,7 @@ def get_provider() -> AIProvider:
         )
 
     raise ValueError(
-        "No AI API key configured. Set ANTHROPIC_API_KEY or GEMINI_API_KEY in your .env file."
+        "No AI API key configured. Set GEMINI_API_KEY in your .env file."
     )
 
 

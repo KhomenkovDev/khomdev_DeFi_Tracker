@@ -6,19 +6,19 @@ import numpy as np
 import pandas as pd
 
 
-def sma(series: pd.Series, window: int) -> Any | None:
-    value = series.rolling(window=window).mean().iloc[-1]
-    if pd.isna(value):
-        return None
-    return float(round(value, 2))
+def _clean_series(series: pd.Series) -> list[float | None]:
+    return [float(x) if pd.notna(x) and not np.isinf(x) else None for x in series]
 
 
-def rsi(series: pd.Series, window: int = 14) -> Any | None:
+def sma(series: pd.Series, window: int) -> list[float | None]:
+    res = series.rolling(window=window).mean()
+    return _clean_series(res)
+
+
+def rsi(series: pd.Series, window: int = 14) -> list[float | None]:
     delta = series.diff()
     gain = delta.where(delta > 0, 0).rolling(window=window).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
     rs = gain / loss
-    value = (100 - (100 / (1 + rs))).iloc[-1]
-    if pd.isna(value) or np.isinf(value):
-        return None
-    return float(round(value, 2))
+    res = 100 - (100 / (1 + rs))
+    return _clean_series(res)

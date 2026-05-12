@@ -24,42 +24,14 @@ def get_historical_data(request):
         return JsonResponse(cached_data)
 
     try:
-        final_symbol, hist = get_history(symbol, period)
+        market_data = get_history(symbol, period)
     except ValueError as e:
         return JsonResponse({"error": str(e)}, status=404)
 
-    hist = hist.dropna()
-    candlesticks = []
-    seen_dates: set[str] = set()
-
-    for date, row in hist.iterrows():
-        ts = date.strftime("%Y-%m-%d")
-        if ts in seen_dates:
-            continue
-        seen_dates.add(ts)
-        candlesticks.append(
-            {
-                "time": ts,
-                "open": float(round(row["Open"], 4)),
-                "high": float(round(row["High"], 4)),
-                "low": float(round(row["Low"], 4)),
-                "close": float(round(row["Close"], 4)),
-            }
-        )
-
-    if not candlesticks:
-        return JsonResponse({"error": "No valid data points found."}, status=404)
-
-    current_price = candlesticks[-1]["close"]
-    prev_price = candlesticks[-2]["close"] if len(candlesticks) > 1 else current_price
-    change_pct = round(((current_price - prev_price) / prev_price) * 100, 2) if prev_price else 0
-
-    response_data = {
-        "symbol": final_symbol,
-        "candlesticks": candlesticks,
-        "current_price": round(current_price, 4),
-        "change_pct": change_pct,
-    }
+    # Convert Pydantic model to dict for JSON response
+    response_data = market_data.model_dump()
+    
+    # Cache for 5 minutes
     cache.set(cache_key, response_data, 60 * 5)
     return JsonResponse(response_data)
 

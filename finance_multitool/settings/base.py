@@ -84,7 +84,6 @@ SESSION_SAVE_EVERY_REQUEST = False
 
 APP_NAME = os.environ.get("APP_NAME", "DeFi Tracker")
 
-ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
 LOGGING = {

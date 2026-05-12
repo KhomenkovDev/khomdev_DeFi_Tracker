@@ -26,7 +26,7 @@ def dashboard_home(request):
             ],
             "DeFi & Ecosystems": [
                 {"symbol": "AAVE-USD", "name": "Aave"},
-                {"symbol": "UNI7083-USD", "name": "Uniswap"},
+                {"symbol": "UNI-USD", "name": "Uniswap"},
                 {"symbol": "LINK-USD", "name": "Chainlink"},
                 {"symbol": "SNX-USD", "name": "Synthetix"},
                 {"symbol": "MKR-USD", "name": "Maker"},

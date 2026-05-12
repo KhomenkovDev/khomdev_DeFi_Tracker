@@ -130,9 +130,14 @@
 
                 // Show AI model badge
                 if (data.ai_model) {
-                    const labels = { claude: '⚡ Claude AI', gemini: '✦ Gemini AI', cached: '⚡ Cached' };
+                    const labels = { 
+                        claude: '⚡ Claude AI', 
+                        gemini: '✦ Gemini AI', 
+                        'multi-agent-synthesis': '✦ Multi-Agent Intel',
+                        cached: '⚡ Cached' 
+                    };
                     aiBadge.textContent = labels[data.ai_model] || data.ai_model;
-                    aiBadge.className = `ai-badge ${data.ai_model === 'claude' ? '' : 'ai-badge-secondary'}`;
+                    aiBadge.className = `ai-badge ${data.ai_model === 'cached' ? '' : 'ai-badge-secondary'}`;
                     aiBadge.style.display = 'inline-block';
                 }
             }

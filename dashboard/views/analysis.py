@@ -22,7 +22,7 @@ _MAPPED_ERRORS = {
     "429": "API rate limit exceeded. Please wait and try again.",
     "503": "AI service temporarily unavailable. Please try again shortly.",
     "unavailable": "AI service temporarily unavailable. Please try again shortly.",
-    "api key": "No AI API key configured. Set ANTHROPIC_API_KEY in your .env file.",
+    "api key": "No AI API key configured. Set GEMINI_API_KEY in your .env file.",
 }
 
 
@@ -50,11 +50,10 @@ def asset_analysis(request, asset_symbol):
 @login_required
 def api_market_review(request):
     """
-    Backend service for AI-powered market reviews.
-    1. Fetches historical data from yfinance.
-    2. Computes technical indicators (SMA, RSI) using Pandas.
-    3. Prompts the configured LLM (Claude/Gemini) for a technical summary.
-    4. Caches results for 1 hour to optimize API costs.
+    Multi-agent 'Synthesis Loop' for market analysis.
+    1. Technical Agent: Analyzes patterns and indicators.
+    2. Risk Agent: Analyzes volatility and liquidity.
+    3. Synthesis Agent: Combines findings into a final report.
     """
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request"}, status=400)
@@ -69,49 +68,53 @@ def api_market_review(request):
         if cached:
             return JsonResponse({"review": cached, "ai_model": "cached"})
 
-        fetch_period = "1y" if period in ["1mo", "3mo", "6mo"] else "2y"
-
         try:
-            final_symbol, hist = get_history(symbol, fetch_period)
+            market_data = get_history(symbol, "1y")
         except ValueError:
             return JsonResponse({"error": "No data for this asset."}, status=404)
 
-        close_prices = hist["Close"]
-        sma_50 = sma(close_prices, 50)
-        sma_20 = sma(close_prices, 20)
-        rsi_val = rsi(close_prices)
+        closes = pd.Series([c.close for c in market_data.candlesticks])
+        sma_20 = next((x for x in reversed(sma(closes, 20)) if x is not None), None)
+        sma_50 = next((x for x in reversed(sma(closes, 50)) if x is not None), None)
+        rsi_val = next((x for x in reversed(rsi(closes, 14)) if x is not None), None)
 
-        end_price = round(float(close_prices.iloc[-1]), 2)
-        offset = {"1mo": 30, "3mo": 90, "6mo": 180}.get(period, 365)
-        recent_hist = close_prices.tail(min(offset, len(close_prices)))
-        start_price = round(float(recent_hist.iloc[0]), 2) if not recent_hist.empty else end_price
+        # ── Step 1: Technical Analysis ──
+        tech_prompt = f"""You are a Lead Technical Analyst. 
+Analyze {market_data.symbol} using:
+- Current Price: ${market_data.current_price}
+- SMA 20: {sma_20}, SMA 50: {sma_50}
+- RSI: {rsi_val}
+Identify trend (Bullish/Bearish), momentum, and potential breakouts."""
+        tech_analysis = generate_analysis(tech_prompt)
 
-        prompt = f"""You are a professional crypto-asset quantitative analyst.
-Analyze the digital asset {final_symbol} over the last {period} using these technical indicators:
+        # ── Step 2: Risk Assessment ──
+        risk_prompt = f"""You are a Crypto Risk Manager.
+Analyze the risk profile of {market_data.symbol}. 
+Recent price change: {market_data.change_pct}%.
+Evaluate volatility and liquidity risks based on the price data provided."""
+        risk_analysis = generate_analysis(risk_prompt)
 
-- Price range: ${start_price} to ${end_price}
-- Current price: ${end_price}
-- 20-day SMA: {sma_20 if sma_20 else "N/A"}
-- 50-day SMA: {sma_50 if sma_50 else "N/A"}
-- 14-day RSI: {rsi_val if rsi_val else "N/A"}
+        # ── Step 3: Synthesis ──
+        synthesis_prompt = f"""You are a Senior Portfolio Manager. 
+Synthesize these two reports for {market_data.symbol}:
 
-Write a concise market review (2 short paragraphs) covering:
-trend direction, overbought/oversold signals, any Golden/Death Cross signals,
-and actionable insight. Use markdown formatting."""
+TECHNICAL ANALYSIS:
+{tech_analysis}
 
-        review_text = generate_analysis(prompt)
-        ai_model = "claude" if os.environ.get("ANTHROPIC_API_KEY") else "gemini"
+RISK ASSESSMENT:
+{risk_analysis}
 
-        cache.set(cache_key, review_text, 60 * 60)
-        return JsonResponse({"review": review_text, "ai_model": ai_model})
+Produce a final, high-fidelity 'Intelligence Report' in Markdown. 
+Include sections for 'Technical Outlook', 'Risk Profile', and a final 'Actionable Insight'."""
+        
+        final_report = generate_analysis(synthesis_prompt)
+        
+        cache.set(cache_key, final_report, 60 * 60)
+        return JsonResponse({"review": final_report, "ai_model": "multi-agent-synthesis"})
 
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-    except ValueError as e:
-        return JsonResponse({"error": _map_error_message(str(e))}, status=500)
     except Exception:
-        logger.exception("Market review failed")
-        return JsonResponse({"error": "An unexpected error occurred."}, status=500)
+        logger.exception("Multi-agent analysis failed")
+        return JsonResponse({"error": "Intelligence synthesis failed. Please try again."}, status=500)
 
 
 @login_required
@@ -119,7 +122,6 @@ def api_predict(request):
     """
     Generates quantitative price predictions using LLM pattern recognition.
     Analyzes the last 30 close prices to forecast a 5-step future trend.
-    Returns structured JSON with a rationale and predicted float values.
     """
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request"}, status=400)
@@ -135,15 +137,15 @@ def api_predict(request):
             return JsonResponse(cached)
 
         try:
-            final_symbol, hist = get_history(symbol, "3mo")
+            market_data = get_history(symbol, "3mo")
         except ValueError:
             return JsonResponse({"error": "No data for this asset."}, status=404)
 
-        historical_prices = [round(float(x), 2) for x in hist["Close"].tolist()[-30:]]
+        historical_prices = [round(c.close, 2) for c in market_data.candlesticks[-30:]]
 
         prompt = (
             f"You are a quantitative crypto analyst. Analyze these 30 recent "
-            f"close prices for {final_symbol}:\n{historical_prices}\n\n"
+            f"close prices for {market_data.symbol}:\n{historical_prices}\n\n"
             f"Predict the price trend for the next {period}. Be analytical about "
             f"momentum, support/resistance levels, and recent volatility.\n\n"
             f"Respond ONLY with valid JSON (no markdown, no backticks):\n"
