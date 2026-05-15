@@ -8,69 +8,68 @@
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>AI Analysis for <span style="color:var(--accent)">{{ asset_symbol }}</span></h1>
-    <a href="{% url 'dashboard_home' %}" class="back-link">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        Back to Dashboard
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1 style="font-family: var(--font-mono); font-size: 1.5rem; letter-spacing: -0.05em;">[ANALYSIS] <span style="color:var(--accent)">{{ asset_symbol }}</span></h1>
+    <a href="{% url 'dashboard_home' %}" class="btn btn-secondary" style="width: auto; padding: 0.5rem 1rem; font-size: 0.75rem;">
+        &lt;&lt; RETURN TO HUB
     </a>
 </div>
 
 <div class="dashboard-grid">
 
     <!-- Market Review -->
-    <section class="glass-card analysis-section">
-        <div class="analysis-header">
-            <h2>Market Review</h2>
-            <span class="ai-badge" id="review-ai-badge" style="display:none"></span>
+    <section class="terminal-card analysis-section">
+        <div class="card-header">
+            <span class="card-title">Neural Market Review</span>
+            <span class="mono" id="review-ai-badge" style="display:none; font-size: 0.7rem; color: var(--accent);"></span>
         </div>
-        <p class="text-muted">AI-generated analysis of historical price trends, SMA crossovers, and RSI signals.</p>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; font-family: var(--font-mono);">[SYSTEM] SYNTHESIZING HISTORICAL PRICE TRENDS, SMA CROSSOVERS, AND RSI SIGNALS.</p>
 
-        <div class="form-group" style="margin-top:1rem">
-            <label>Lookback Period</label>
+        <div class="form-group">
+            <label>Lookback Horizon</label>
             <select id="review-period">
-                <option value="1mo">Last 1 Month</option>
-                <option value="3mo">Last 3 Months</option>
-                <option value="6mo">Last 6 Months</option>
-                <option value="1y">Last 1 Year</option>
+                <option value="1mo">30 DAY WINDOW</option>
+                <option value="3mo">90 DAY WINDOW</option>
+                <option value="6mo">180 DAY WINDOW</option>
+                <option value="1y">365 DAY WINDOW</option>
             </select>
         </div>
 
-        <button id="btn-review" class="btn btn-primary">Generate Report</button>
+        <button id="btn-review" class="btn btn-primary">EXECUTE GENERATION</button>
 
-        <div id="review-error" style="display:none;color:var(--danger);margin-top:1rem;font-size:0.9rem"></div>
-        <div class="loader" id="loader-review" style="display:none"></div>
-        <div id="review-output" class="analysis-content markdown-body" style="display:none"></div>
+        <div id="review-error" class="mono" style="display:none; color:var(--danger); margin-top:1rem; font-size:0.75rem;"></div>
+        <div class="loader" id="loader-review" style="display:none; margin: 2rem auto;"></div>
+        <div id="review-output" class="analysis-content markdown-body" style="display:none; margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; font-family: var(--font-mono); font-size: 0.9rem;"></div>
     </section>
 
     <!-- Price Predictions -->
-    <section class="glass-card analysis-section">
-        <div class="analysis-header">
-            <h2>Price Predictions</h2>
-            <span class="ai-badge ai-badge-secondary">Experimental</span>
+    <section class="terminal-card analysis-section">
+        <div class="card-header">
+            <span class="card-title">Predictive Projections</span>
+            <span class="mono" style="font-size: 0.7rem; color: var(--accent);">[EXPERIMENTAL]</span>
         </div>
-        <p class="text-muted">AI-generated short-term price predictions based on recent chart patterns.</p>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; font-family: var(--font-mono);">[SYSTEM] CALCULATING SHORT-TERM PROJECTIONS VIA RECENT CHART TOPOLOGY.</p>
 
-        <div class="form-group" style="margin-top:1rem">
-            <label>Prediction Horizon</label>
+        <div class="form-group">
+            <label>Projection Depth</label>
             <select id="predict-period">
-                <option value="5 days">Next 5 Days</option>
-                <option value="1 month">Next 1 Month</option>
+                <option value="5 days">05 DAY VECTOR</option>
+                <option value="1 month">30 DAY VECTOR</option>
             </select>
         </div>
 
-        <button id="btn-predict" class="btn btn-primary">Run Prediction Model</button>
+        <button id="btn-predict" class="btn btn-primary">INITIALIZE PROJECTION</button>
 
-        <div id="predict-error" style="display:none;color:var(--danger);margin-top:1rem;font-size:0.9rem"></div>
-        <div class="loader" id="loader-predict" style="display:none"></div>
+        <div id="predict-error" class="mono" style="display:none; color:var(--danger); margin-top:1rem; font-size:0.75rem;"></div>
+        <div class="loader" id="loader-predict" style="display:none; margin: 2rem auto;"></div>
 
-        <div id="predict-output" style="display:none;margin-top:1.5rem">
-            <div class="chart-container" style="height:280px">
+        <div id="predict-output" style="display:none; margin-top:1.5rem">
+            <div class="chart-container" style="height:280px; background: #000; border: 1px solid var(--border);">
                 <canvas id="predictChart"></canvas>
             </div>
-            <div class="analysis-content" style="margin-top:1rem">
-                <h3 style="font-size:0.9rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:0.5rem">AI Rationale</h3>
-                <p id="predict-rationale" style="font-style:italic;color:var(--text-muted);font-size:0.9rem;line-height:1.6"></p>
+            <div style="margin-top:1.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                <span class="mono" style="font-size:0.7rem; text-transform:uppercase; color:var(--accent); display: block; margin-bottom: 0.5rem;">[AI RATIONALE]</span>
+                <p id="predict-rationale" class="mono" style="color:var(--text-main); font-size:0.85rem; line-height:1.6"></p>
             </div>
         </div>
     </section>
@@ -80,22 +79,6 @@
 
 {% block extra_scripts %}
 <script>
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-    const csrftoken = getCookie('csrftoken');
-
     const symbol = "{{ asset_symbol }}";
     let predictChart = null;
 
@@ -108,7 +91,7 @@
         const aiBadge = document.getElementById('review-ai-badge');
 
         btn.disabled = true;
-        btn.textContent = 'Analyzing...';
+        btn.textContent = '[ANALYZING...]';
         loader.style.display = 'block';
         output.style.display = 'none';
         errDiv.style.display = 'none';
@@ -116,42 +99,33 @@
         try {
             const res = await fetch('/api/analysis/review/', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ symbol, period })
             });
             const data = await res.json();
 
             if (data.error) {
-                errDiv.textContent = data.error;
+                errDiv.textContent = `[ERROR] ${data.error.toUpperCase()}`;
                 errDiv.style.display = 'block';
             } else {
                 output.innerHTML = marked.parse(data.review);
                 output.style.display = 'block';
 
-                // Show AI model badge
                 if (data.ai_model) {
-                    const labels = { 
-                        claude: '⚡ Claude AI', 
-                        gemini: '✦ Gemini AI', 
-                        'multi-agent-synthesis': '✦ Multi-Agent Intel',
-                        cached: '⚡ Cached' 
-                    };
-                    aiBadge.textContent = labels[data.ai_model] || data.ai_model;
-                    aiBadge.className = `ai-badge ${data.ai_model === 'cached' ? '' : 'ai-badge-secondary'}`;
+                    aiBadge.textContent = `[SOURCE: ${data.ai_model.toUpperCase()}]`;
                     aiBadge.style.display = 'inline-block';
                 }
             }
         } catch (err) {
-            errDiv.textContent = 'Network error: ' + err.message;
+            errDiv.textContent = '[ERROR] NETWORK FAILURE';
             errDiv.style.display = 'block';
         } finally {
             loader.style.display = 'none';
             btn.disabled = false;
-            btn.textContent = 'Generate Report';
+            btn.textContent = 'EXECUTE GENERATION';
         }
     });
 
-    // ── Price Prediction ─────────────────────────────────────────────────────
     document.getElementById('btn-predict').addEventListener('click', async () => {
         const period = document.getElementById('predict-period').value;
         const btn = document.getElementById('btn-predict');
@@ -160,7 +134,7 @@
         const errDiv = document.getElementById('predict-error');
 
         btn.disabled = true;
-        btn.textContent = 'Predicting...';
+        btn.textContent = '[CALCULATING...]';
         loader.style.display = 'block';
         output.style.display = 'none';
         errDiv.style.display = 'none';
@@ -168,19 +142,19 @@
         try {
             const res = await fetch('/api/analysis/predict/', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ symbol, period })
             });
             const data = await res.json();
 
             if (data.error) {
-                errDiv.textContent = data.error;
+                errDiv.textContent = `[ERROR] ${data.error.toUpperCase()}`;
                 errDiv.style.display = 'block';
             } else {
                 document.getElementById('predict-rationale').textContent = data.rationale;
 
                 const prices = data.predicted_prices;
-                const labels = prices.map((_, i) => `Point ${i + 1}`);
+                const labels = prices.map((_, i) => `T+${i + 1}`);
 
                 if (predictChart) predictChart.destroy();
                 predictChart = new Chart(document.getElementById('predictChart'), {
@@ -188,13 +162,13 @@
                     data: {
                         labels,
                         datasets: [{
-                            label: 'Predicted Price',
+                            label: 'Projection',
                             data: prices,
-                            borderColor: '#A855F7',
-                            backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                            borderWidth: 2,
-                            pointBackgroundColor: '#A855F7',
-                            pointRadius: 5,
+                            borderColor: '#00f2ff',
+                            backgroundColor: 'rgba(0, 242, 255, 0.05)',
+                            borderWidth: 1,
+                            pointBackgroundColor: '#00f2ff',
+                            pointRadius: 3,
                             fill: true,
                             tension: 0.4,
                         }]
@@ -204,8 +178,14 @@
                         maintainAspectRatio: false,
                         plugins: { legend: { display: false } },
                         scales: {
-                            x: { ticks: { color: '#9CA3AF' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                            y: { ticks: { color: '#9CA3AF' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                            x: { 
+                                ticks: { color: '#8b8b93', font: { family: 'JetBrains Mono', size: 10 } }, 
+                                grid: { color: '#16161d' } 
+                            },
+                            y: { 
+                                ticks: { color: '#8b8b93', font: { family: 'JetBrains Mono', size: 10 } }, 
+                                grid: { color: '#16161d' } 
+                            }
                         }
                     }
                 });
@@ -213,12 +193,12 @@
                 output.style.display = 'block';
             }
         } catch (err) {
-            errDiv.textContent = 'Network error: ' + err.message;
+            errDiv.textContent = '[ERROR] NETWORK FAILURE';
             errDiv.style.display = 'block';
         } finally {
             loader.style.display = 'none';
             btn.disabled = false;
-            btn.textContent = 'Run Prediction Model';
+            btn.textContent = 'INITIALIZE PROJECTION';
         }
     });
 </script>

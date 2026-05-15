@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Crypto asset watchlist with candlestick charts and AI-powered technical commentary.">
+    <meta name="description" content="Professional DeFi Intelligence Terminal with AI-powered market reviews.">
     <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
@@ -13,26 +13,17 @@
     <nav class="navbar">
         <a href="{% url 'dashboard_home' %}" class="logo">{{ APP_NAME }}</a>
         <div class="nav-links">
-            {% if user.is_authenticated %}
-                <a href="{% url 'dashboard_home' %}">Dashboard</a>
-                <span class="nav-username">{{ user.username }}</span>
-                <form method="post" action="{% url 'logout' %}" style="display:inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-nav-logout">Logout</button>
-                </form>
-            {% else %}
-                <a href="{% url 'login' %}">Login</a>
-                <a href="{% url 'register' %}" class="btn btn-primary nav-register-btn">Get Started</a>
-            {% endif %}
+            <a href="{% url 'dashboard_home' %}">Intelligence Hub</a>
+            <a href="https://github.com/KhomenkovDev/khomdev_DeFi_Tracker" target="_blank">Source</a>
         </div>
     </nav>
 
     {% if messages %}
-    <div class="global-messages">
+    <div class="global-messages" style="position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 2000; width: 100%; max-width: 600px; padding: 0 1rem;">
         {% for message in messages %}
-        <div class="global-alert global-alert-{{ message.tags }}">
-            {{ message }}
-            <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+        <div class="terminal-card" style="margin-bottom: 0.5rem; border-color: var(--accent); padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent);">[{{ message.tags|upper }}] {{ message }}</span>
+            <button class="star-btn" onclick="this.parentElement.remove()" style="color: var(--accent); font-size: 1.5rem; line-height: 1;">×</button>
         </div>
         {% endfor %}
     </div>

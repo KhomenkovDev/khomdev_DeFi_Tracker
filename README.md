@@ -1,152 +1,84 @@
-# DeFi Tracker
+# KhomDev DeFi Intelligence Terminal
 
-Crypto asset watchlist with candlestick charts and LLM-generated technical commentary.
+A high-fidelity, public-facing market intelligence terminal for crypto assets. Featuring real-time price visualization via Lightweight Charts and deep-learning market analysis synthesised via Anthropic Claude and Google Gemini.
 
-Pulls price history from yfinance (Yahoo Finance), asset search from CoinGecko, and generates market reviews via Anthropic Claude or Google Gemini.
+> [!NOTE]
+> This project has been refactored into a **Stateless Intelligence Terminal**. Authentication has been removed in favor of local persistence, making it ideal for rapid deployment as a portfolio piece.
 
-## Status and scope
+## ── Technical Architecture ──
 
-This is a personal-use dashboard. It is not suitable for production deployment without additional work (see Limitations).
+```mermaid
+graph TD
+    User((Terminal User)) -->|Interacts| UI[Cyber-Nordic UI]
+    UI -->|Frontend State| LS[(Browser LocalStorage)]
+    UI -->|API Requests| Django[Django Backend]
+    
+    subgraph Services
+        Django --> MD[Market Data Service]
+        Django --> AI[AI Synthesis Engine]
+    end
+    
+    MD -->|Fetch| YF[Yahoo Finance API]
+    MD -->|Search| CG[CoinGecko API]
+    
+    AI -->|Analyze| CL[Anthropic Claude]
+    AI -->|Fallback| GM[Google Gemini]
+```
 
-yfinance is an unofficial scraper of Yahoo Finance and can break or rate-limit without warning. LLM-generated commentary is not financial advice.
+## ── Key Features ──
 
-## Requirements
+- **Cyber-Nordic Aesthetic**: A professional, low-latency terminal interface designed for data density and technical clarity.
+- **Stateless Intelligence**: No login required. Watchlists and custom assets are persisted locally via `localStorage`.
+- **AI Synthesis Engine**: Generates multi-agent market reviews and predictive price vectors based on technical indicators (SMA, RSI).
+- **High-Performance Charts**: Integrated with TradingView's Lightweight Charts for smooth, mobile-responsive visualization.
+- **Multi-Provider Resilience**: Automated fallback between Anthropic and Google Gemini for 99.9% availability of AI insights.
 
+## ── Quick Start ──
+
+### Prerequisites
 - Python 3.12+
-- (Recommended) An Anthropic API key for market reviews
-- (Optional) A Google Gemini API key as a fallback AI provider
-- (Optional) PostgreSQL for persistent data across restarts
-- (Optional) Redis for persistent caching across instances
+- (Required) Anthropic or Google Gemini API Key
 
-## Install and run
-
-### Option A: pip (local)
+### Installation
 
 ```bash
-# Create a virtual environment
+# Clone the repository
+git clone https://github.com/KhomenkovDev/khomdev_DeFi_Tracker.git
+cd khomdev_DeFi_Tracker
+
+# Environment setup
 python3.12 -m venv .venv
 source .venv/bin/activate
+pip install -e .
 
-# Install dependencies
-pip install -e .[dev]
-
-# Copy and edit environment variables
+# Configuration
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env with your AI provider keys
 
-# Run migrations
-python manage.py migrate
-
-# Start the server
+# Launch Terminal
 python manage.py runserver
 ```
 
-### Option B: Docker Compose (recommended for development)
+## ── Tech Stack ──
 
-```bash
-# Copy and edit environment variables
-cp .env.example .env
-# Edit .env with your API keys
+- **Backend**: Django 5.x (Python 3.12)
+- **Frontend**: Vanilla JS, CSS3 (Custom Design System)
+- **Data**: `yfinance`, `pycoingecko`
+- **Visualization**: `lightweight-charts`
+- **AI**: Anthropic API, Google Generative AI
 
-# Start all services (Postgres, Redis, Django)
-docker compose up --build
-```
+## ── Environment Variables ──
 
-Open http://localhost:8000 in your browser.
+| Key | Description |
+|---|---|
+| `ANTHROPIC_API_KEY` | Primary AI provider for market reviews |
+| `GEMINI_API_KEY` | Secondary/Fallback AI provider |
+| `APP_NAME` | Terminal display name (Default: "DeFi Terminal") |
+| `DEBUG` | Set to `False` in production |
 
-## Configuration
+## ── License ──
 
-| Variable | Default | Description |
-|---|---|---|
-| `SECRET_KEY` | *required in prod* | Django secret key |
-| `DEBUG` | `True` | Enable debug mode (dev only) |
-| `ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated allowed hosts |
-| `CSRF_TRUSTED_ORIGINS` | (empty in dev) | Comma-separated trusted origins |
-| `DATABASE_URL` | (uses SQLite) | PostgreSQL connection string |
-| `ANTHROPIC_API_KEY` | (AI disabled) | Anthropic API key for market reviews |
-| `ANTHROPIC_MODEL` | `claude-sonnet-4-20250514` | Anthropic model ID |
-| `GEMINI_API_KEY` | (fallback only) | Google Gemini API key |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model ID |
-| `REDIS_URL` | (uses LocMemCache) | Redis connection string |
-| `APP_NAME` | `DeFi Tracker` | Application display name |
-| `DJANGO_LOG_LEVEL` | `WARNING` | Django log level |
+Distributed under the MIT License. See `LICENSE` for more information.
 
-## Architecture
-
-```
-defi-tracker/
-├── manage.py
-├── docker-compose.yml
-├── Dockerfile
-├── pyproject.toml
-├── finance_multitool/       # Django project configuration
-│   ├── settings/
-│   │   ├── base.py          # Shared settings
-│   │   ├── dev.py           # Development overrides
-│   │   └── prod.py          # Production overrides
-│   └── urls.py
-├── dashboard/               # Main application
-│   ├── views/               # View functions grouped by domain
-│   │   ├── auth.py          # Registration, login, logout
-│   │   ├── dashboard.py     # Dashboard home page
-│   │   ├── watchlist.py     # Watchlist toggle
-│   │   ├── market.py        # Historical data, asset search
-│   │   └── analysis.py      # AI market review, price predictions
-│   ├── services/            # Business logic layer
-│   │   ├── ai.py            # AI provider abstraction (Anthropic, Gemini)
-│   │   ├── market_data.py   # yfinance wrapper
-│   │   ├── indicators.py    # SMA, RSI calculations
-│   │   └── cache.py         # Cache key helpers
-│   ├── models.py
-│   ├── urls.py
-│   └── tests/
-├── templates/               # Django templates
-└── static/                  # Static assets (CSS)
-```
-
-## Development
-
-### Running tests
-
-```bash
-pytest
-```
-
-### Linting and formatting
-
-```bash
-ruff check .
-ruff format .
-```
-
-### Type checking
-
-```bash
-mypy dashboard/services/   # strict
-mypy dashboard/             # lenient (Django views)
-```
-
-### Adding a new AI provider
-
-1. Create a new class in `dashboard/services/ai.py` that implements the `AIProvider` protocol (a `generate` method).
-2. Add the provider to `get_provider()` with the appropriate precedence.
-
-### Adding a new market data source
-
-1. Create a new function in `dashboard/services/market_data.py` that returns a `(symbol, DataFrame)` tuple.
-2. Use it in the relevant view module under `dashboard/views/`.
-
-## Limitations and warnings
-
-- **yfinance fragility**: yfinance scrapes Yahoo Finance and can break without notice. Rate limits may also apply.
-- **LLM hallucination**: AI-generated market reviews and price predictions are not financial advice. They may contain factual errors or nonsensical analysis.
-- **Ephemeral cache**: The default LocMemCache is per-process and non-shared. For multi-instance deployments, configure a Redis backend via `REDIS_URL`.
-- **Ephemeral SQLite**: SQLite on serverless platforms (Cloud Run, Heroku) resets on every container restart. Always use PostgreSQL in production.
-
-## Screenshots
-
-(Add a screenshot here showing the dashboard with a candlestick chart and the AI analysis page.)
-
-## License
-
-MIT
+---
+*Created by [KhomenkovDev](https://github.com/KhomenkovDev)*

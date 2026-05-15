@@ -62,15 +62,15 @@
 
 {% block content %}
 <div class="dashboard-grid">
-    <aside class="glass-card controls-section">
-        <div class="header-row">
-            <h3>DeFi Hub</h3>
+    <aside class="terminal-card controls-section">
+        <div class="card-header">
+            <span class="card-title">Intelligence Hub</span>
             <button id="star-btn" class="star-btn" title="Add to Watchlist">★</button>
         </div>
         
         <div class="form-group">
-            <label for="category-select">Category</label>
-            <select id="category-select" style="margin-bottom: 0.5rem">
+            <label for="category-select">Data Stream</label>
+            <select id="category-select">
                 {% for category, assets in categorized_assets.items %}
                 <option value="{{ category }}">{{ category }}</option>
                 {% endfor %}
@@ -78,47 +78,50 @@
         </div>
 
         <div class="form-group">
-            <label for="asset-select">Asset</label>
+            <label for="asset-select">Asset ID</label>
             <select id="asset-select">
                 <!-- Populated via JavaScript -->
             </select>
         </div>
 
         <div class="form-group" style="position: relative;">
-            <label for="search-symbol">Search & Add Asset</label>
+            <label for="search-symbol">Terminal Search</label>
             <div style="display: flex; gap: 0.5rem;">
-                <input type="text" id="search-symbol" placeholder="Search (e.g. Bitcoin or BTC)" style="flex: 1;" autocomplete="off">
-                <button type="button" id="btn-add-symbol" class="btn btn-secondary" style="width: auto;">Add</button>
+                <input type="text" id="search-symbol" placeholder="SYMBOL OR NAME..." autocomplete="off">
+                <button type="button" id="btn-add-symbol" class="btn btn-secondary" style="width: auto;">Verify</button>
             </div>
             <div id="search-results" class="search-results"></div>
-            <small class="helptext" id="search-msg" style="display:none;"></small>
+            <small id="search-msg" style="display:none; font-family: var(--font-mono); font-size: 0.7rem; margin-top: 0.5rem;"></small>
         </div>
 
         <div class="form-group">
-            <label>Time Period</label>
+            <label>Temporal Range</label>
             <div class="button-group" id="period-buttons">
-                <button class="btn btn-secondary" data-period="5d">5D</button>
-                <button class="btn btn-secondary active" data-period="1mo">1M</button>
-                <button class="btn btn-secondary" data-period="6mo">6M</button>
-                <button class="btn btn-secondary" data-period="1y">1Y</button>
+                <button class="btn" data-period="5d">5D</button>
+                <button class="btn active" data-period="1mo">1M</button>
+                <button class="btn" data-period="6mo">6M</button>
+                <button class="btn" data-period="1y">1Y</button>
             </div>
         </div>
 
-        <div class="price-widget">
-            <div class="text-muted">Current Price</div>
-            <div class="price-value" id="current-price">--</div>
-            <div class="price-change" id="price-change">--</div>
+        <div class="price-display">
+            <span class="card-title" style="font-size: 0.7rem; display: block; margin-bottom: 0.5rem;">Current Valuation</span>
+            <span class="current-price" id="current-price">--</span>
+            <span class="price-change" id="price-change">--</span>
         </div>
 
-        <a href="#" id="analysis-btn" class="btn btn-primary" style="margin-top: 1rem;">Go to AI Analysis</a>
+        <a href="#" id="analysis-btn" class="btn btn-primary" style="margin-top: 1rem;">Execute AI Analysis</a>
     </aside>
 
-    <section class="glass-card chart-section">
-        <h2>Price Chart</h2>
-        <div class="loader" id="chart-loader" style="display: block;"></div>
-        <div id="chart-error" style="display: none; color: var(--danger); padding: 2rem; text-align: center; height: 500px; align-items: center; justify-content: center; flex-direction: column;">
-            <h3 id="error-text"></h3>
-            <p>Try searching for a different symbol or adding "-USD".</p>
+    <section class="terminal-card chart-section">
+        <div class="card-header">
+            <span class="card-title">Market Visualization</span>
+            <span id="chart-status" class="mono" style="font-size: 0.7rem; color: var(--accent);">[READY]</span>
+        </div>
+        <div class="loader" id="chart-loader" style="display: none; margin: 100px auto;"></div>
+        <div id="chart-error" style="display: none; color: var(--danger); padding: 2rem; text-align: center; height: 500px; align-items: center; justify-content: center; flex-direction: column; font-family: var(--font-mono);">
+            <h3 id="error-text" style="color: var(--danger); margin-bottom: 1rem;"></h3>
+            <p style="font-size: 0.8rem;">RETRY WITH ALTERNATIVE SYMBOL OR SUFFIX '-USD'</p>
         </div>
         <div class="chart-container" id="tvchart" style="height: 500px;">
         </div>
@@ -127,27 +130,10 @@
 
 <!-- passing data to JS safely -->
 {{ categorized_assets|json_script:"assets-data" }}
-{{ starred_symbols|json_script:"starred-symbols-data" }}
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-    const csrftoken = getCookie('csrftoken');
-
     let currentSymbol = '';
     let currentPeriod = '1mo';
     let chart = null;
@@ -156,8 +142,30 @@
     let sma50Series = null;
     
     const assetsData = JSON.parse(document.getElementById('assets-data').textContent);
-    let starredSymbols = JSON.parse(document.getElementById('starred-symbols-data').textContent);
     
+    // Watchlist persistence via localStorage
+    let starredSymbols = JSON.parse(localStorage.getItem('watchlist_symbols') || '[]');
+    
+    // Inject watchlist into categories if it exists
+    const updateWatchlistCategory = () => {
+        if (starredSymbols.length > 0) {
+            assetsData['Your Watchlist'] = starredSymbols.map(s => ({symbol: s, name: s}));
+            
+            // Check if 'Your Watchlist' option exists, if not add it
+            if (!Array.from(categorySelect.options).some(o => o.value === 'Your Watchlist')) {
+                const opt = document.createElement('option');
+                opt.value = 'Your Watchlist';
+                opt.textContent = 'Your Watchlist';
+                categorySelect.insertBefore(opt, categorySelect.firstChild);
+            }
+        } else {
+            delete assetsData['Your Watchlist'];
+            Array.from(categorySelect.options).forEach(opt => {
+                if (opt.value === 'Your Watchlist') opt.remove();
+            });
+        }
+    };
+
     // UI Elements
     const categorySelect = document.getElementById('category-select');
     const assetSelect = document.getElementById('asset-select');
@@ -171,6 +179,7 @@
     const priceDisplay = document.getElementById('current-price');
     const changeDisplay = document.getElementById('price-change');
     const analysisBtn = document.getElementById('analysis-btn');
+    const chartStatus = document.getElementById('chart-status');
 
     const checkStarred = () => {
         if (starredSymbols.includes(currentSymbol)) {
@@ -180,65 +189,44 @@
         }
     };
 
-    const toggleStar = async () => {
+    const toggleStar = () => {
         if (!currentSymbol) return;
         
-        const res = await fetch('/api/toggle-watchlist/', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
-            body: JSON.stringify({symbol: currentSymbol, name: currentSymbol})
-        });
-        const data = await res.json();
-        
-        if (data.status === 'added') {
-            starredSymbols.push(currentSymbol);
-            if (!assetsData['Your Watchlist']) {
-                assetsData['Your Watchlist'] = [];
-                // Add category if it was missing
-                const opt = document.createElement('option');
-                opt.value = 'Your Watchlist';
-                opt.textContent = 'Your Watchlist';
-                categorySelect.insertBefore(opt, categorySelect.firstChild);
-            }
-            if (!assetsData['Your Watchlist'].some(a => a.symbol === currentSymbol)) {
-                assetsData['Your Watchlist'].push({symbol: currentSymbol, name: currentSymbol});
-            }
-        } else if (data.status === 'removed') {
+        if (starredSymbols.includes(currentSymbol)) {
             starredSymbols = starredSymbols.filter(s => s !== currentSymbol);
-            if (assetsData['Your Watchlist']) {
-                assetsData['Your Watchlist'] = assetsData['Your Watchlist'].filter(a => a.symbol !== currentSymbol);
-                if (assetsData['Your Watchlist'].length === 0) {
-                    delete assetsData['Your Watchlist'];
-                    Array.from(categorySelect.options).forEach(opt => {
-                        if (opt.value === 'Your Watchlist') opt.remove();
-                    });
-                }
-            }
+        } else {
+            starredSymbols.push(currentSymbol);
         }
+        
+        localStorage.setItem('watchlist_symbols', JSON.stringify(starredSymbols));
+        updateWatchlistCategory();
         checkStarred();
-        populateAssets(categorySelect.value);
+        if (categorySelect.value === 'Your Watchlist') {
+            populateAssets('Your Watchlist');
+        }
     };
     starBtn.addEventListener('click', toggleStar);
 
-    // Populate Asset Dropdown relative to Category
     const populateAssets = (category) => {
+        const previousVal = assetSelect.value;
         assetSelect.innerHTML = '';
         const assets = assetsData[category] || [];
         assets.forEach(a => {
             const opt = document.createElement('option');
             opt.value = a.symbol;
-            opt.textContent = `${a.name} (${a.symbol})`;
+            opt.textContent = `${a.name} [${a.symbol}]`;
             assetSelect.appendChild(opt);
         });
         
         if (assets.length > 0) {
-            currentSymbol = assets[0].symbol;
-            checkStarred();
+            if (Array.from(assetSelect.options).some(o => o.value === previousVal)) {
+                assetSelect.value = previousVal;
+            } else {
+                currentSymbol = assets[0].symbol;
+                checkStarred();
+            }
         }
     };
-
-    // Initialize Selectors
-    populateAssets(categorySelect.value);
 
     // Event Listeners for selectors
     categorySelect.addEventListener('change', (e) => {
@@ -272,9 +260,9 @@
                     const div = document.createElement('div');
                     div.className = 'search-item';
                     div.innerHTML = `
-                        <img src="${coin.thumb}" alt="">
+                        <img src="${coin.thumb}" alt="" style="width:16px; height:16px; border-radius:50%">
                         <span class="symbol">${coin.symbol}</span>
-                        <span>${coin.name}</span>
+                        <span class="mono" style="font-size:0.75rem; color:var(--text-muted)">${coin.name}</span>
                     `;
                     div.addEventListener('click', () => {
                         searchSymbolInput.value = coin.yfinance_symbol;
@@ -302,21 +290,19 @@
         
         searchMsg.style.display = 'block';
         searchMsg.style.color = 'var(--text-muted)';
-        searchMsg.textContent = 'Verifying symbol...';
+        searchMsg.textContent = '[SYSTEM] VERIFYING SYMBOL...';
 
         try {
-            // Test if it works by fetching from our API
             const res = await fetch(`/api/historical-data/?symbol=${symbol}&period=1d`);
             const data = await res.json();
             
             if (data.error) {
                 searchMsg.style.color = 'var(--danger)';
-                searchMsg.textContent = data.error;
+                searchMsg.textContent = `[ERROR] ${data.error.toUpperCase()}`;
             } else {
                 searchMsg.style.color = 'var(--success)';
-                searchMsg.textContent = 'Added successfully!';
+                searchMsg.textContent = '[SUCCESS] ASSET ADDED';
                 
-                // Ensure 'Custom Assets' category exists
                 if (!assetsData['Custom Assets']) {
                     assetsData['Custom Assets'] = [];
                     const opt = document.createElement('option');
@@ -325,7 +311,6 @@
                     categorySelect.appendChild(opt);
                 }
                 
-                // Avoid duplicates in assetsData
                 if (!assetsData['Custom Assets'].some(a => a.symbol === data.symbol)) {
                     assetsData['Custom Assets'].push({symbol: data.symbol, name: data.symbol});
                 }
@@ -341,47 +326,52 @@
             }
         } catch (err) {
             searchMsg.style.color = 'var(--danger)';
-            searchMsg.textContent = 'Network error while verifying.';
+            searchMsg.textContent = '[ERROR] NETWORK FAILURE';
         }
         
         setTimeout(() => { searchMsg.style.display = 'none'; }, 3000);
     });
 
-    // Init Lightweight Chart
     const initChart = () => {
         chart = LightweightCharts.createChart(chartContainer, {
             width: chartContainer.clientWidth,
             height: chartContainer.clientHeight,
             layout: {
-                background: { type: 'solid', color: 'transparent' },
-                textColor: 'rgba(255, 255, 255, 0.9)',
+                background: { type: 'solid', color: '#000000' },
+                textColor: '#8b8b93',
+                fontSize: 11,
+                fontFamily: 'JetBrains Mono',
             },
             grid: {
-                vertLines: { color: 'rgba(197, 203, 206, 0.05)' },
-                horzLines: { color: 'rgba(197, 203, 206, 0.05)' },
+                vertLines: { color: '#16161d' },
+                horzLines: { color: '#16161d' },
             },
-            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-            rightPriceScale: { borderColor: 'rgba(197, 203, 206, 0.8)' },
-            timeScale: { borderColor: 'rgba(197, 203, 206, 0.8)' }
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal,
+                vertLine: { color: '#00f2ff', labelBackgroundColor: '#00f2ff' },
+                horzLine: { color: '#00f2ff', labelBackgroundColor: '#00f2ff' },
+            },
+            rightPriceScale: { borderColor: '#2a2a32' },
+            timeScale: { borderColor: '#2a2a32' }
         });
 
         candlestickSeries = chart.addCandlestickSeries({
-            upColor: '#26a69a',
-            downColor: '#ef5350',
+            upColor: '#00ffaa',
+            downColor: '#ff4d4d',
             borderVisible: false,
-            wickUpColor: '#26a69a',
-            wickDownColor: '#ef5350'
+            wickUpColor: '#00ffaa',
+            wickDownColor: '#ff4d4d'
         });
 
         sma20Series = chart.addLineSeries({
-            color: 'rgba(168, 85, 247, 0.7)',
-            lineWidth: 2,
+            color: 'rgba(0, 242, 255, 0.5)',
+            lineWidth: 1,
             title: 'SMA 20',
         });
 
         sma50Series = chart.addLineSeries({
-            color: 'rgba(34, 211, 238, 0.7)',
-            lineWidth: 2,
+            color: 'rgba(255, 255, 255, 0.3)',
+            lineWidth: 1,
             title: 'SMA 50',
         });
 
@@ -396,11 +386,15 @@
         const errDiv = document.getElementById('chart-error');
         errDiv.style.display = 'flex';
         document.getElementById('error-text').textContent = msg;
+        chartStatus.textContent = '[ERROR]';
+        chartStatus.style.color = 'var(--danger)';
     };
 
     const hideError = () => {
         document.getElementById('chart-error').style.display = 'none';
         chartContainer.style.display = 'block';
+        chartStatus.textContent = '[SYNCING]';
+        chartStatus.style.color = 'var(--accent)';
     };
 
     const updateDashboard = () => {
@@ -408,9 +402,8 @@
 
         chartLoader.style.display = 'block';
         hideError();
-        chartContainer.style.opacity = '0.3';
+        chartContainer.style.opacity = '0.1';
         
-        // Update analysis button link
         analysisBtn.href = `/analysis/${currentSymbol}/`;
 
         fetch(`/api/historical-data/?symbol=${currentSymbol}&period=${currentPeriod}`)
@@ -420,17 +413,13 @@
                 chartContainer.style.opacity = '1';
 
                 if (data.error) {
-                    showError(`Error: ${data.error}`);
+                    showError(data.error.toUpperCase());
                     return;
                 }
 
-                // Update Widgets
                 updatePriceDisplay(data.current_price, data.change_pct);
-
-                // Update Lightweight Chart
                 candlestickSeries.setData(data.candlesticks);
                 
-                // Indicators
                 if (data.indicators) {
                     const formatIndicator = (vals) => {
                         return data.candlesticks.map((c, i) => ({
@@ -444,11 +433,11 @@
                 }
 
                 chart.timeScale().fitContent();
+                chartStatus.textContent = '[STABLE]';
             })
             .catch(err => {
                 chartLoader.style.display = 'none';
-                console.error('Error fetching data:', err);
-                showError(`Fatal error drawing chart: ${err.message}`);
+                showError('FATAL SYNC ERROR');
             });
     };
 
@@ -456,67 +445,35 @@
         const oldPrice = priceDisplay.textContent;
         priceDisplay.textContent = `$${price}`;
         
-        // Pulse effect
         if (oldPrice !== `$${price}`) {
-            priceDisplay.style.transition = 'none';
             priceDisplay.style.color = 'var(--accent)';
-            setTimeout(() => {
-                priceDisplay.style.transition = 'color 1s';
-                priceDisplay.style.color = 'var(--text-main)';
-            }, 100);
+            setTimeout(() => { priceDisplay.style.color = '#fff'; }, 300);
         }
 
         changeDisplay.textContent = `${change}%`;
         if (change >= 0) {
             changeDisplay.className = 'price-change change-up';
-            changeDisplay.innerHTML = `↑ ${change}%`;
+            changeDisplay.innerHTML = `▲ ${change}%`;
         } else {
             changeDisplay.className = 'price-change change-down';
-            changeDisplay.innerHTML = `↓ ${Math.abs(change)}%`;
+            changeDisplay.innerHTML = `▼ ${Math.abs(change)}%`;
         }
-    };
-
-    let pricePollInterval = null;
-    const startPricePolling = () => {
-        if (pricePollInterval) clearInterval(pricePollInterval);
-        
-        pricePollInterval = setInterval(async () => {
-            if (!currentSymbol) return;
-            try {
-                const res = await fetch(`/api/historical-data/?symbol=${currentSymbol}&period=1d`);
-                const data = await res.json();
-                if (!data.error) {
-                    updatePriceDisplay(data.current_price, data.change_pct);
-                    // Also update the last candle on the chart for a real-time feel
-                    if (candlesticks && data.candlesticks && data.candlesticks.length > 0) {
-                        const lastCandle = data.candlesticks[data.candlesticks.length - 1];
-                        candlestickSeries.update(lastCandle);
-                    }
-                }
-            } catch (err) {
-                console.error('Price poll failed:', err);
-            }
-        }, 15000); // Poll every 15 seconds
     };
 
     document.addEventListener('DOMContentLoaded', () => {
-        try {
-            initChart();
-            updateDashboard();
-            startPricePolling();
+        updateWatchlistCategory();
+        populateAssets(categorySelect.value);
+        initChart();
+        updateDashboard();
 
-            document.getElementById('period-buttons').addEventListener('click', (e) => {
-                if (e.target.tagName === 'BUTTON') {
-                    document.querySelectorAll('#period-buttons button').forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                    currentPeriod = e.target.dataset.period;
-                    updateDashboard();
-                }
-            });
-        } catch (e) {
-            chartLoader.style.display = 'none';
-            document.body.innerHTML = "<div style='color:red; padding: 2em; background:black'><h1>JS Crash!</h1><p>" + e.message + "</p><pre>" + e.stack + "</pre></div>";
-        }
+        document.getElementById('period-buttons').addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn')) {
+                document.querySelectorAll('#period-buttons .btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentPeriod = e.target.dataset.period;
+                updateDashboard();
+            }
+        });
     });
 </script>
 {% endblock %}
