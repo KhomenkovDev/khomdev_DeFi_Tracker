@@ -6,7 +6,6 @@ import logging
 import os
 import pandas as pd
 
-from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -40,7 +39,6 @@ def _map_error_message(raw: str) -> str:
     return "An unexpected error occurred. Please try again later."
 
 
-@login_required
 def asset_analysis(request, asset_symbol):
     """
     Renders the primary analysis dashboard for a specific asset.
@@ -49,7 +47,6 @@ def asset_analysis(request, asset_symbol):
     return render(request, "dashboard/analysis.html", {"asset_symbol": asset_symbol})
 
 
-@login_required
 def api_market_review(request):
     """
     Multi-agent 'Synthesis Loop' for market analysis.
@@ -119,7 +116,6 @@ Include sections for 'Technical Outlook', 'Risk Profile', and a final 'Actionabl
         return JsonResponse({"error": "Intelligence synthesis failed. Please try again."}, status=500)
 
 
-@login_required
 def api_predict(request):
     """
     Generates quantitative price predictions using LLM pattern recognition.

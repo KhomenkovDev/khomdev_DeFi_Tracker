@@ -1,0 +1,11 @@
+.gcloudignore
+.git
+.gitignore
+.venv
+.env
+.next
+.gemini
+__pycache__
+*.pyc
+db.sqlite3
+node_modules

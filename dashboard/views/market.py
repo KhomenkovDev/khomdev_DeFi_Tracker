@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 
 import requests
-from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.http import JsonResponse
 
@@ -13,7 +12,6 @@ from ..services.market_data import get_history
 logger = logging.getLogger(__name__)
 
 
-@login_required
 def get_historical_data(request):
     symbol = request.GET.get("symbol", "BTC-USD").upper()
     period = request.GET.get("period", "1mo")
@@ -36,7 +34,6 @@ def get_historical_data(request):
     return JsonResponse(response_data)
 
 
-@login_required
 def api_search_assets(request):
     query = request.GET.get("q", "").strip()
     if not query:
