@@ -9,6 +9,7 @@ import pandas as pd
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 from ..services.ai import generate_analysis
 from ..services.cache import predict_cache_key, review_cache_key
@@ -39,10 +40,18 @@ def _map_error_message(raw: str) -> str:
     return "An unexpected error occurred. Please try again later."
 
 
+@ensure_csrf_cookie
 def asset_analysis(request, asset_symbol):
     """
     Renders the primary analysis dashboard for a specific asset.
     The actual data fetching is triggered via frontend AJAX to the API endpoints.
+
+    `@ensure_csrf_cookie` forces Django to set the `csrftoken` cookie on the
+    rendered HTML response, so the inline JS can read it and pass it as the
+    `X-CSRFToken` header on subsequent POSTs to /api/analysis/{review,predict}/.
+    Without this, browsers never receive the cookie (the template uses no
+    `{% csrf_token %}` tag) and every POST returns 403 — surfaced as
+    "NETWORK FAILURE" in the UI.
     """
     return render(request, "dashboard/analysis.html", {"asset_symbol": asset_symbol})
 
