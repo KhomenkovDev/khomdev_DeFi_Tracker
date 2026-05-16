@@ -142,13 +142,9 @@ def api_predict(request):
         historical_prices = [round(c.close, 2) for c in market_data.candlesticks[-30:]]
 
         prompt = (
-            f"You are a quantitative crypto analyst. Analyze these 30 recent "
-            f"close prices for {market_data.symbol}:\n{historical_prices}\n\n"
-            f"Predict the price trend for the next {period}. Be analytical about "
-            f"momentum, support/resistance levels, and recent volatility.\n\n"
-            f"Respond ONLY with valid JSON (no markdown, no backticks):\n"
-            f'{{"rationale": "your 1-2 sentence reasoning", '
-            f'"predicted_prices": [5 float values]}}'
+            f"Analyze these 30 recent close prices for {market_data.symbol}:\n{historical_prices}\n\n"
+            f"Predict the trend for the next {period}. Focus on momentum and volatility.\n\n"
+            f"Return JSON with 'rationale' (1-2 sentences) and 'predicted_prices' (list of 5 floats)."
         )
 
         result = generate_analysis(prompt, response_json=True)

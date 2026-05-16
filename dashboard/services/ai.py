@@ -59,6 +59,8 @@ def get_provider() -> AIProvider:
     )
 
 
+import re
+
 def _strip_code_fences(text: str) -> str:
     text = text.strip()
     if text.startswith("```"):
@@ -78,9 +80,15 @@ def generate_analysis(
     if response_json:
         cleaned = _strip_code_fences(raw)
         try:
-            result: dict[str, Any] = json.loads(cleaned)
-            return result
+            return json.loads(cleaned)
         except json.JSONDecodeError:
+            # Fallback: Try to find JSON block with regex
+            match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
+            if match:
+                try:
+                    return json.loads(match.group(1))
+                except json.JSONDecodeError:
+                    pass
             logger.error("Provider returned invalid JSON: %s", raw[:200])
             raise
     return raw
