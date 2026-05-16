@@ -147,7 +147,19 @@ def api_predict(request):
             f"Return JSON with 'rationale' (1-2 sentences) and 'predicted_prices' (list of 5 floats)."
         )
 
-        result = generate_analysis(prompt, response_json=True)
+        predict_schema = {
+            "type": "OBJECT",
+            "properties": {
+                "rationale": {"type": "STRING"},
+                "predicted_prices": {
+                    "type": "ARRAY",
+                    "items": {"type": "NUMBER"}
+                }
+            },
+            "required": ["rationale", "predicted_prices"]
+        }
+
+        result = generate_analysis(prompt, response_schema=predict_schema)
 
         if not isinstance(result, dict):
             return JsonResponse({"error": "AI returned unexpected format."}, status=502)

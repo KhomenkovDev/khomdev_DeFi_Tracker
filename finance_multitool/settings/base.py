@@ -73,7 +73,7 @@ SESSION_SAVE_EVERY_REQUEST = False
 
 APP_NAME = os.environ.get("APP_NAME", "DeFi Tracker")
 
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
 
 LOGGING = {
     "version": 1,

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from typing import Any, Protocol
 
 from django.conf import settings
@@ -12,7 +13,12 @@ logger = logging.getLogger(__name__)
 
 class AIProvider(Protocol):
     def generate(
-        self, prompt: str, *, max_tokens: int = 1024, response_json: bool = False
+        self,
+        prompt: str,
+        *,
+        max_tokens: int = 1024,
+        response_json: bool = False,
+        response_schema: dict[str, Any] | None = None,
     ) -> str: ...
 
 
@@ -30,17 +36,30 @@ class GeminiProvider:
             GeminiProvider._client = genai.Client(api_key=self.api_key)
         return GeminiProvider._client
 
-    def generate(self, prompt: str, *, max_tokens: int = 1024, response_json: bool = False) -> str:
+    def generate(
+        self,
+        prompt: str,
+        *,
+        max_tokens: int = 1024,
+        response_json: bool = False,
+        response_schema: dict[str, Any] | None = None,
+    ) -> str:
         client = self._get_client()
         kwargs: dict[str, Any] = {
             "model": self.model,
             "contents": prompt,
         }
-        if response_json:
-            kwargs["config"] = {
-                "response_mime_type": "application/json",
-                "max_output_tokens": max_tokens,
-            }
+        
+        config_dict: dict[str, Any] = {"max_output_tokens": max_tokens}
+        
+        if response_schema:
+            config_dict["response_mime_type"] = "application/json"
+            config_dict["response_schema"] = response_schema
+        elif response_json:
+            config_dict["response_mime_type"] = "application/json"
+            
+        kwargs["config"] = config_dict
+        
         response = client.models.generate_content(**kwargs)
         return str(response.text or "Analysis currently unavailable.")
 
@@ -59,7 +78,7 @@ def get_provider() -> AIProvider:
     )
 
 
-import re
+
 
 def _strip_code_fences(text: str) -> str:
     text = text.strip()
@@ -73,11 +92,20 @@ def _strip_code_fences(text: str) -> str:
 
 
 def generate_analysis(
-    prompt: str, *, max_tokens: int = 1024, response_json: bool = False
+    prompt: str,
+    *,
+    max_tokens: int = 1024,
+    response_json: bool = False,
+    response_schema: dict[str, Any] | None = None,
 ) -> str | dict[str, Any]:
     provider = get_provider()
-    raw = provider.generate(prompt, max_tokens=max_tokens, response_json=response_json)
-    if response_json:
+    raw = provider.generate(
+        prompt,
+        max_tokens=max_tokens,
+        response_json=response_json,
+        response_schema=response_schema,
+    )
+    if response_json or response_schema:
         cleaned = _strip_code_fences(raw)
         try:
             return json.loads(cleaned)
